@@ -16,7 +16,7 @@
 
 AFRAME.registerSystem( 'layer', {
 	schema: {
-		total: { type: 'number', default: 1 },
+		total: { type: 'number', default: 4 },
 		ticks: { type: 'number', default: 12 },
 	},
 
@@ -79,41 +79,66 @@ AFRAME.registerSystem( 'layer', {
 			let proxyGeometry = this.proxyEl.getObject3D( 'obj' ).geometry
 			let proxyVertices = proxyGeometry.vertices;
 
-			let geometry = this.entities[ 0 ].getObject3D( 'obj' ).geometry
-			let vertices = geometry.vertices;
-
-			console.log( 'vertices.length', vertices.length );
-			vertices[0].copy( proxyVertices[ 0 ] );
-
-			// vertices.forEach( ( vertex, i ) => {
-			// 	let seed = i + 2*this.data.ticks + 1;
-			// 	vertex.copy( proxyVertices[ seed ] );
-			// });
-			// let order = [
+			// let stepOffsets = [
+			// 	[ -1, 0, 7, 8 ],
 			// 	[ 0, 1, 6, 7 ],
 			// 	[ 1, 2, 5, 6 ],
-			// 	[ 2, 3, 4, 5 ],
+			// 	[ 2, 3, 4, 5 ]
 			// ];
-			let order;
-			// order = [ 0, 1, 6, 7 ];
-			// order = [ -1, 0, 7, -2 ];
-			// order = [ 1, 2, 5, 6 ];
-			order = [ 2, 3, 4, 5 ];
-			vertices.forEach( ( vertex, i ) => {
-				let x = parseInt( i / this.data.ticks );
-				let seed;
-				seed = i%this.data.ticks + order[x]*this.data.ticks + 1;
-				seed = ( order[x] === -1 ) ? 0 : seed;
-				seed = ( order[x] === -2 ) ? proxyVertices.length-1 : seed;
+			for ( let i = 0; i < this.data.total; i++) {
+				// let stepOrder = stepOffsets[i];
+
+				let stepOrder = [
+					-1 + i,
+					 0 + i,
+					-1 - i + this.data.total*2,
+					 0 - i + this.data.total*2
+				];
+
+				let geometry = this.entities[ i ].getObject3D( 'obj' ).geometry
+				let vertices = geometry.vertices;
+
+				vertices.forEach( ( vertex, id ) => {
+					let tick = parseInt( id / this.data.ticks );
+					let seed;
+					seed = id % this.data.ticks + stepOrder[tick] * this.data.ticks + 1;
+
+					// required for center layer
+					seed = ( stepOrder[tick] === -1 ) ? 0 : seed;
+					seed = ( stepOrder[tick] === 8 ) ? proxyVertices.length-1 : seed;
+					vertex.copy( proxyVertices[ seed ] );
+				});
+				geometry.verticesNeedUpdate = true;
+
+			}
+
+			// let geometry = this.entities[ 0 ].getObject3D( 'obj' ).geometry
+			// let vertices = geometry.vertices;
+			//
+			// console.log( 'vertices.length', vertices.length );
+			// vertices[0].copy( proxyVertices[ 0 ] );
 
 
-				vertex.copy( proxyVertices[ seed ] );
-			});
-
-
-			geometry.verticesNeedUpdate = true;
-
-			console.log( geometry );
+			// let stepOrder;
+			// // order = [ -1, 0, 7, -2 ];
+			// // order = [ 0, 1, 6, 7 ];
+			// // order = [ 1, 2, 5, 6 ];
+			// stepOrder = [ 2, 3, 4, 5 ];
+			// vertices.forEach( ( vertex, i ) => {
+			// 	let x = parseInt( i / this.data.ticks );
+			// 	let seed;
+			// 	seed = i%this.data.ticks + stepOrder[x]*this.data.ticks + 1;
+			// 	seed = ( stepOrder[x] === -1 ) ? 0 : seed;
+			// 	seed = ( stepOrder[x] === -2 ) ? proxyVertices.length-1 : seed;
+			//
+			//
+			// 	vertex.copy( proxyVertices[ seed ] );
+			// });
+			//
+			//
+			// geometry.verticesNeedUpdate = true;
+			//
+			// console.log( geometry );
 
 
 			return next();
@@ -122,7 +147,8 @@ AFRAME.registerSystem( 'layer', {
 	},
 
 	createProxy( obj ) {
-		let geometry = new THREE.SphereGeometry( 1, this.data.ticks, 9 );
+		let totalSteps = this.data.total * 2 + 1;
+		let geometry = new THREE.SphereGeometry( 1, this.data.ticks, totalSteps );
 		let material = new THREE.MeshPhongMaterial( {
 			color: 0x4CC3D9,
 			flatShading: true,
@@ -176,7 +202,7 @@ AFRAME.registerComponent('layer', {
 	},
 
 	init: function () {
-		this.normal = this.data.seed / (this.system.data.total-1);
+		this.normal = this.data.seed / (this.system.data.total);
 		console.log('components','layer', 'init', this.data.seed, this.normal);
 		this.system.registerMe(this.el);
 
@@ -197,9 +223,9 @@ AFRAME.registerComponent('layer', {
 		// } );
 
 		this.el.setAttribute( 'position', {
-			x : 0,//this.normal * 4.0 - 2.0,
-			y : 0,//1.6,
-			z : 0,//-2
+			x : 0, //this.normal * 4.0 - 2.0,
+			y : 0, //1.6,
+			z : (this.normal)*4 - 4
 		} );
 	},
 
