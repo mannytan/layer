@@ -17,7 +17,7 @@
 AFRAME.registerSystem( 'layer', {
 	schema: {
 		total: { type: 'number', default: 10 },
-		ticks: { type: 'number', default: 24 },
+		ticks: { type: 'number', default: 12 },
 	},
 
 	init: function () {
@@ -54,7 +54,7 @@ AFRAME.registerSystem( 'layer', {
 		next().then( () => {
 
 			this.proxyEl.setAttribute( 'position', { x : 0, y : 0, z : 0 } );
-			this.proxyEl.setAttribute( 'scale', { x : -2, y : 0.05, z : 4 } );
+			this.proxyEl.setAttribute( 'scale', { x : -2, y : 0.125, z : 2 } );
 			this.proxyEl.setAttribute( 'rotation', { x : 90, y : 0, z : 0 } );
 			this.proxyEl.setAttribute( 'visible', false );
 
@@ -169,9 +169,9 @@ AFRAME.registerComponent('layer', {
 		seed: {type: 'number', default: 0 },
 	},
 
-	init: function () {
+	init () {
 		this.normal = this.data.seed / (this.system.data.total);
-		console.log('components','layer', 'init', this.data.seed, this.normal);
+		// console.log('components','layer', 'init', this.data.seed, this.normal);
 		this.system.registerMe(this.el);
 
 		let geometry = new THREE.TorusGeometry( 0.5, 0.25, 4, this.system.data.ticks );
@@ -179,9 +179,22 @@ AFRAME.registerComponent('layer', {
 		let torus = new THREE.Mesh( geometry, material );
 
 		this.el.setObject3D('obj', torus);
+		this.x = 0;
+		this.y = 0;
+		this.z = 0;
 	},
+	tick() {
+		this.el.setAttribute( 'rotation', {
+			x : this.x,
+			y : this.y,
+			z : this.z,
 
-	update: function () {
+		} );
+		this.x += 0.5 + 1-this.normal;
+		this.y += 0.5 + 1-this.normal;
+		this.z += 0.5 + 1-this.normal;
+	},
+	update () {
 
 		// this.el.setAttribute( 'geometry', {
 		// 	primitive : 'box',
@@ -192,12 +205,12 @@ AFRAME.registerComponent('layer', {
 
 		this.el.setAttribute( 'position', {
 			x : 0, //this.normal * 4.0 - 2.0,
-			y : 0, //1.6,
-			z : (this.normal)*4 - 4
+			y : 1.6,
+			z : -6 //(this.normal)*4 - 4
 		} );
 	},
 
-	remove: function () {
+	remove () {
 		console.log('layer', 'remove', this.data.seed);
 		this.system.unregisterMe(this.el);
 	}
