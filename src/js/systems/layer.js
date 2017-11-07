@@ -16,8 +16,8 @@
 
 AFRAME.registerSystem( 'layer', {
 	schema: {
-		total: { type: 'number', default: 4 },
-		ticks: { type: 'number', default: 12 },
+		total: { type: 'number', default: 10 },
+		ticks: { type: 'number', default: 24 },
 	},
 
 	init: function () {
@@ -45,15 +45,18 @@ AFRAME.registerSystem( 'layer', {
 		this.proxyEl.id = 'proxy';
 		this.scene.appendChild( this.proxyEl );
 
-		let sphere = this.createProxy( { steps:7, ticks:this.data.ticks } );
+		let steps = this.data.total * 2 - 1;
+
+		let sphere = this.createProxy( { steps: steps , ticks:this.data.ticks } );
 		this.proxyEl.setObject3D('obj', sphere);
 
 		let next = () => { return new Promise( resolve => { setTimeout( resolve ) }) }
 		next().then( () => {
 
 			this.proxyEl.setAttribute( 'position', { x : 0, y : 0, z : 0 } );
-			this.proxyEl.setAttribute( 'scale', { x : -2, y : 0.25, z : 2 } );
+			this.proxyEl.setAttribute( 'scale', { x : -2, y : 0.05, z : 4 } );
 			this.proxyEl.setAttribute( 'rotation', { x : 90, y : 0, z : 0 } );
+			this.proxyEl.setAttribute( 'visible', false );
 
 			this.bakeTransformsOnProxy();
 
@@ -79,14 +82,7 @@ AFRAME.registerSystem( 'layer', {
 			let proxyGeometry = this.proxyEl.getObject3D( 'obj' ).geometry
 			let proxyVertices = proxyGeometry.vertices;
 
-			// let stepOffsets = [
-			// 	[ -1, 0, 7, 8 ],
-			// 	[ 0, 1, 6, 7 ],
-			// 	[ 1, 2, 5, 6 ],
-			// 	[ 2, 3, 4, 5 ]
-			// ];
 			for ( let i = 0; i < this.data.total; i++) {
-				// let stepOrder = stepOffsets[i];
 
 				let stepOrder = [
 					-1 + i,
@@ -105,40 +101,12 @@ AFRAME.registerSystem( 'layer', {
 
 					// required for center layer
 					seed = ( stepOrder[tick] === -1 ) ? 0 : seed;
-					seed = ( stepOrder[tick] === 8 ) ? proxyVertices.length-1 : seed;
+					seed = ( stepOrder[tick] === this.data.total*2 ) ? proxyVertices.length-1 : seed;
 					vertex.copy( proxyVertices[ seed ] );
 				});
 				geometry.verticesNeedUpdate = true;
 
 			}
-
-			// let geometry = this.entities[ 0 ].getObject3D( 'obj' ).geometry
-			// let vertices = geometry.vertices;
-			//
-			// console.log( 'vertices.length', vertices.length );
-			// vertices[0].copy( proxyVertices[ 0 ] );
-
-
-			// let stepOrder;
-			// // order = [ -1, 0, 7, -2 ];
-			// // order = [ 0, 1, 6, 7 ];
-			// // order = [ 1, 2, 5, 6 ];
-			// stepOrder = [ 2, 3, 4, 5 ];
-			// vertices.forEach( ( vertex, i ) => {
-			// 	let x = parseInt( i / this.data.ticks );
-			// 	let seed;
-			// 	seed = i%this.data.ticks + stepOrder[x]*this.data.ticks + 1;
-			// 	seed = ( stepOrder[x] === -1 ) ? 0 : seed;
-			// 	seed = ( stepOrder[x] === -2 ) ? proxyVertices.length-1 : seed;
-			//
-			//
-			// 	vertex.copy( proxyVertices[ seed ] );
-			// });
-			//
-			//
-			// geometry.verticesNeedUpdate = true;
-			//
-			// console.log( geometry );
 
 
 			return next();
@@ -207,7 +175,7 @@ AFRAME.registerComponent('layer', {
 		this.system.registerMe(this.el);
 
 		let geometry = new THREE.TorusGeometry( 0.5, 0.25, 4, this.system.data.ticks );
-		let material = new THREE.MeshPhongMaterial( { color: 0xEF2D5E, flatShading: true, wireframe: true } );
+		let material = new THREE.MeshPhongMaterial( { color: 0xEF2D5E, flatShading: true, wireframe: false } );
 		let torus = new THREE.Mesh( geometry, material );
 
 		this.el.setObject3D('obj', torus);
