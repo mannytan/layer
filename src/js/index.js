@@ -13,3 +13,4 @@
 // limitations under the License.
 
 require( 'aframe' );
+require( './systems/layer' );

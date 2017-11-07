@@ -1,4 +1,4 @@
-// Copyright 2017 Google Inc.
+// Copyright (c) 2017 Manny Tan
 //
 //   Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -13,18 +13,11 @@
 // limitations under the License.
 
 
-/**
- * Common color constants
- */
+AFRAME.registerComponent('boilerplate', {
+	schema: {},  // System schema. Parses into `this.data`.
 
-export const BGColorHex = 0xF7F5F4;
-export const FogColorHex = 0xE1CBB2;
-export const TextColorHex = 0x133754;
-export const TextLightColorHex = 0xA3A3A3;
-export const WhiteColorHex = 0xFFFFFF;
+	init: function () {
+		console.log('components','boilerplate', 'init');
+	},
 
-export const BGColor = new THREE.Color( BGColorHex );
-export const FogColor = new THREE.Color( FogColorHex );
-export const TextColor = new THREE.Color( TextColorHex );
-export const TextLightColor = new THREE.Color ( TextLightColorHex );
-export const WhiteColor = new THREE.Color ( WhiteColorHex );
+});

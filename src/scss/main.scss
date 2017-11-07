@@ -1,13 +1,3 @@
-@font-face {
-    font-family: NowAlt-Medium;
-    src: url('../fonts/NowAlt-Medium.otf');
-}
-
-@font-face {
-    font-family: NowAlt-Regular;
-    src: url('../fonts/NowAlt-Regular.otf');
-}
-
 html, body {
 	position: absolute;
 	top: 0px;
@@ -19,26 +9,13 @@ html, body {
 	background-color: #000;
 	color: #133754;
 	overflow: hidden;
-	margin: 0;
-	font-family: "NowAlt-Regular";
 	user-select: none;
-	touch-callout: none !important;
-
-	button #start {
-		position: absolute;
-		top: 20px;
-		right: 20px;
-	}
 }
 
-* {
-	box-sizing: border-box;
+/* applys a natural box layout model to all elements, but allowing components to change */
+html {
+  box-sizing: border-box;
 }
-
-@import 'splash';
-@import 'vr';
-@import 'vrbutton';
-@import 'exit';
-@import 'fallback';
-@import 'footer';
-@import 'about';
+*, *:before, *:after {
+  box-sizing: inherit;
+}
