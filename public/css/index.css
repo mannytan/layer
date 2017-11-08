@@ -1,9 +1,3 @@
-html {
-  box-sizing: border-box; }
-
-*, *:before, *:after {
-  box-sizing: inherit; }
-
 html, body {
   position: absolute;
   top: 0px;
@@ -15,3 +9,10 @@ html, body {
   color: #133754;
   overflow: hidden;
   user-select: none; }
+
+/* applys a natural box layout model to all elements, but allowing components to change */
+html {
+  box-sizing: border-box; }
+
+*, *:before, *:after {
+  box-sizing: inherit; }

@@ -12,10 +12,17 @@
 //   See the License for the specific language governing permissions and
 // limitations under the License.
 
-require( 'aframe' );
-require( 'aframe-animation-component' );
+AFRAME.registerSystem( 'layer-animation', {
+	schema: {
 
-require( './systems/layer-system' );
-require( './components/layer-component' );
+	},
 
-require( './systems/layer-animation' );
+	init: function () {
+		console.log( 'system', 'layer-animation', 'init' );
+	},
+
+	update: function () {
+		console.log( 'system', 'layer-animation', 'update' );
+	},
+
+});
