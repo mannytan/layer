@@ -26,19 +26,22 @@ AFRAME.registerSystem( 'layer-animation', {
 		console.log( 'layer-animation-system', 'init' );
 
 		this.randomRange = MathUtils.randomIntFromInterval;
+		this.getRandomColor = MathUtils.getRandomColor;
 		this.scene = this.el.sceneEl;
 		this.entities = null;
 		this.total = 0;
+		this.animationCount = 0;
 
 		this.animations = [
 			{ property:'position', to: this.getRandomPositionString() },
 			{ property:'rotation', to: this.getRandomRotationString() },
 			{ property:'scale', to: '1 1 100' },
 			{ property:'rotation', to: this.getRandomRotationString() },
+
 			{ property:'scale', to: '1 1 1' },
-			{ property:'position', to: this.getRandomPositionString() },
-			{ property:'position', to: '0 0 0' },
-			{ property:'rotation', to: '0 0 0' },
+			// { property:'position', to: this.getRandomPositionString() },
+			// { property:'position', to: '0 0 0' },
+			// { property:'rotation', to: '0 0 0' },
 		];
 
 
@@ -55,38 +58,38 @@ AFRAME.registerSystem( 'layer-animation', {
 	},
 	getRandomPositionString() {
 		var pos = [
-			this.randomRange( -2, 2 ),
-			this.randomRange( -2, 2 ),
-			this.randomRange( -2, 2 )
+			( this.randomRange(0,1) === 0) ? 0 : this.randomRange( -2, 2 ),
+			( this.randomRange(0,1) === 0) ? 0 : this.randomRange( -2, 2 ),
+			( this.randomRange(0,1) === 0) ? 0 : this.randomRange( -2, 2 )
 		];
 		return pos.join(" ");
 	},
 	getRandomRotationString() {
 		var angles = [
-			this.randomRange( -4, 4 ) * 90,
-			this.randomRange( -4, 4 ) * 90,
-			this.randomRange( -4, 4 ) * 90
+			( this.randomRange(0,1) === 0) ? 0 : this.randomRange( -4, 4 ) * 90,
+			( this.randomRange(0,1) === 0) ? 0 : this.randomRange( -4, 4 ) * 90,
+			( this.randomRange(0,1) === 0) ? 0 : this.randomRange( -4, 4 ) * 90
 		];
 		return angles.join(" ");
 	},
 	createAnimations() {
-		this.animationCount = 0;
-		this.startAnimations(this.animations[this.animationCount]);
+		this.animationId = 0;
+		this.startAnimations(this.animations[this.animationId]);
 
 		this.scene.addEventListener( 'animation-complete', event => {
-			this.animationCount++;
-			if( this.animationCount === this.animations.length ) {
+			this.animationId++;
+			if( this.animationId === this.animations.length ) {
 				console.log('all animations complete')
-				return;
+				this.animationId = 1;
 			}
-			this.startAnimations(this.animations[this.animationCount]);
+			this.startAnimations(this.animations[this.animationId]);
 		});
 
 	},
 	startAnimations( params ) {
-
+		console.log('startAnimations')
 		let speed = 1000;
-		let delay = 1000;
+		let delay = 2000;
 		let masterDelay = 1000;//speed + delay;
 		let el;
 		this.completeCount = 0;
@@ -107,7 +110,7 @@ AFRAME.registerSystem( 'layer-animation', {
 				}
 			});
 		}
-
+		this.animationCount++;
 
 		/*
 		timeCount += masterDelay;
