@@ -12,17 +12,17 @@
 //   See the License for the specific language governing permissions and
 // limitations under the License.
 
-require( 'aframe' );
-require( 'aframe-animation-component' );
+AFRAME.registerSystem( 'layer-data', {
+	schema: {
+		total: { type: 'number', default: 12 },
+		ticks: { type: 'number', default: 48 },
+	},
 
-require( './systems/layer-data-system' );
-
-
-require( './systems/layer-system' );
-require( './components/layer-component' );
-
-require( './systems/layer-animation-system' );
-
-
-
-require( './components/slow-rotate-component' );
+	init () {
+		console.log( 'layer-data-system', 'init' );
+		console.log( 'total', this.data.total );
+		console.log( 'ticks', this.data.ticks );
+		this.entities = [];
+		this.scene = this.el.sceneEl;
+	},
+});

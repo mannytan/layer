@@ -13,32 +13,37 @@
 // limitations under the License.
 
 AFRAME.registerSystem( 'layer', {
+	dependencies: [ 'layer-data' ],
+
 	schema: {
-		total: { type: 'number', default: 12 },
-		ticks: { type: 'number', default: 48 },
+
 	},
 
 	init () {
-		console.log( 'system', 'layer', 'init' );
-		this.entities = [];
-		this.scene = this.el.sceneEl;
+		console.log( 'layer-system', 'init' );
+		this.scene 	= this.el.sceneEl;
+
+		let layerData = this.scene.systems['layer-data'];
+		this.entities = layerData.entities;
+		this.total = layerData.data.total;
+		this.ticks = layerData.data.ticks;
+
 		this.isProxyReady = false;
 		this.areLayersReady = false;
 	},
 	update () {
-		// setTimeout( () => { this.create3dObjects(); });
+		console.log( 'layer-system', 'update' );
 		this.create3dObjects();
 	},
 
 	/**
-	 * Creates all objects
+	 * Creates all objects dynamically
 	 */
 	create3dObjects: function () {
-		console.log( 'system', 'layer', 'create3dObjects' );
+		console.log( 'layer-system', 'create3dObjects' );
 
 		// creates and transforms proxy entity
 		this.proxyEl = document.createElement( 'a-entity' );
-		this.proxyEl.id = 'proxy';
 		this.proxyEl.setAttribute( 'position', { x: 0, y: 0, z: 0 } );
 		this.proxyEl.setAttribute( 'scale', { x: -2, y: 0.02, z: 2 } );
 		this.proxyEl.setAttribute( 'rotation', { x: 90, y: 0, z: 0 } );
@@ -47,20 +52,23 @@ AFRAME.registerSystem( 'layer', {
 			this.isProxyReady = true;
 			this.tryMapVertices();
 		} );
-		let mesh = this.createProxyEntity( this.data.total, this.data.ticks );
+		let mesh = this.createProxyEntity( this.total, this.ticks );
 		this.proxyEl.setObject3D('obj', mesh );
 		this.scene.appendChild( this.proxyEl );
 
-		// creates layers and layer container
+		// creates layer container
 		this.layerContainer = document.createElement( 'a-entity' );
-		this.layerContainer.id = 'layer-container';
-		this.layerContainer.setAttribute( 'position', { x: 0, y: 1.6, z: -3 } );
+		this.layerContainer.setAttribute( 'position', { x: 0, y: 1.6, z: -6 } );
+		this.layerContainer.setAttribute( 'slow-rotate', { speed: 0.25 } );
 		this.scene.appendChild( this.layerContainer );
+
+		// creates layers
 		this.scene.addEventListener( 'layers3dset', event => {
+			this.bakeTransformsOnEntity( this.proxyEl );
 			this.areLayersReady = true;
 			this.tryMapVertices();
 		} );
-		for ( let i = 0; i < this.data.total; i++) {
+		for ( let i = 0; i < this.total; i++) {
 			this.createLayerEntity( i );
 		}
 	},
@@ -71,37 +79,37 @@ AFRAME.registerSystem( 'layer', {
 	tryMapVertices() {
 		if ( !this.isProxyReady ) return;
 		if ( !this.areLayersReady ) return;
-
-		this.bakeTransformsOnEntity( this.proxyEl );
+		console.log( 'layer-system', 'tryMapVertices' );
 
 		let proxyGeometry = this.proxyEl.getObject3D( 'obj' ).geometry
 		let proxyVertices = proxyGeometry.vertices;
 
-		for ( let i = 0; i < this.data.total; i++) {
+		for ( let i = 0; i < this.total; i++) {
 
 			let stepOrder = [
 				-1 + i,
 				 0 + i,
-				-1 - i + this.data.total*2,
-				 0 - i + this.data.total*2
+				-1 - i + this.total*2,
+				 0 - i + this.total*2
 			];
 
 			let geometry = this.entities[ i ].getObject3D( 'obj' ).geometry
 			let vertices = geometry.vertices;
 
 			vertices.forEach( ( vertex, id ) => {
-				let tick = parseInt( id / this.data.ticks );
+				let tick = parseInt( id / this.ticks );
 				let seed;
-				seed = id % this.data.ticks + stepOrder[tick] * this.data.ticks + 1;
+				seed = id % this.ticks + stepOrder[tick] * this.ticks + 1;
 
 				// required for center layer
 				seed = ( stepOrder[tick] === -1 ) ? 0: seed;
-				seed = ( stepOrder[tick] === this.data.total * 2 ) ? proxyVertices.length-1: seed;
+				seed = ( stepOrder[tick] === this.total * 2 ) ? proxyVertices.length-1: seed;
 				vertex.copy( proxyVertices[ seed ] );
 			});
 			geometry.verticesNeedUpdate = true;
 
 		}
+		this.scene.emit( 'layers-ready' );
 	},
 
 	/**
@@ -109,6 +117,7 @@ AFRAME.registerSystem( 'layer', {
 	 * @param el
 	 */
 	bakeTransformsOnEntity( el ) {
+		console.log( 'layer-system', 'bakeTransformsOnEntity' );
 
 		let mesh = el.object3D;
 		mesh.updateMatrix();
@@ -148,7 +157,7 @@ AFRAME.registerSystem( 'layer', {
 
 	registerMe: function ( el ) {
 		this.entities.push( el );
-		if( this.entities.length === this.data.total ) {
+		if( this.entities.length === this.total ) {
 			this.scene.emit('layers3dset')
 		}
 	},

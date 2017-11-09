@@ -22,6 +22,13 @@
 class StaticMathUtils {
 
 	/**
+	 * Returns random interger value between range
+	 */
+	randomIntFromInterval( min, max ) {
+	    return Math.floor( Math.random() * ( max - min + 1 ) + min );
+	}
+
+	/**
 	 * Clamps a given value between min and max
 	 */
 	clamp( value, min, max ) {

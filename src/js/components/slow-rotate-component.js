@@ -12,17 +12,25 @@
 //   See the License for the specific language governing permissions and
 // limitations under the License.
 
-AFRAME.registerSystem( 'layer-animation', {
+
+AFRAME.registerComponent('slow-rotate', {
 	schema: {
-
+		speed: { type: 'number', default: 1 },
+		axis: { type: 'string', default: 'Y' },
 	},
 
-	init: function () {
-		console.log( 'system', 'layer-animation', 'init' );
+	init () {
+		this.x = 0;
+		this.y = 0;
 	},
 
-	update: function () {
-		console.log( 'system', 'layer-animation', 'update' );
-	},
+	tick() {
+		this.el.setAttribute( 'rotation', {
+			x: this.x,
+			y: this.y,
+		} );
+		this.x += this.data.speed;
+		this.y += this.data.speed;
+	}
 
 });
