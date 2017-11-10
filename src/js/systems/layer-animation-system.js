@@ -25,25 +25,15 @@ AFRAME.registerSystem( 'layer-animation', {
 	init () {
 		console.log( 'layer-animation-system', 'init' );
 
-		this.randomRange = MathUtils.randomIntFromInterval;
-		this.getRandomColor = MathUtils.getRandomColor;
+		this.randomInt = MathUtils.randomInt;
+		this.randomStep = MathUtils.randomStep;
+		this.randomColor = MathUtils.randomColor;
 		this.scene = this.el.sceneEl;
 		this.entities = null;
 		this.total = 0;
 		this.animationCount = 0;
 
-		this.animations = [
-			{ property:'position', to: this.getRandomPositionString() },
-			{ property:'rotation', to: this.getRandomRotationString() },
-			{ property:'scale', to: '1 1 100' },
-			{ property:'rotation', to: this.getRandomRotationString() },
-
-			{ property:'scale', to: '1 1 1' },
-			// { property:'position', to: this.getRandomPositionString() },
-			// { property:'position', to: '0 0 0' },
-			// { property:'rotation', to: '0 0 0' },
-		];
-
+		this.animations = this.createRandomTransforms();
 
 		this.scene.addEventListener( 'layers-ready', event => {
 
@@ -56,21 +46,47 @@ AFRAME.registerSystem( 'layer-animation', {
 		});
 
 	},
-	getRandomPositionString() {
-		var pos = [
-			( this.randomRange(0,1) === 0) ? 0 : this.randomRange( -2, 2 ),
-			( this.randomRange(0,1) === 0) ? 0 : this.randomRange( -2, 2 ),
-			( this.randomRange(0,1) === 0) ? 0 : this.randomRange( -2, 2 )
+
+	createRandomTransforms() {
+		return [
+			{ property:'position', to: this.getRandomPosition() },
+			{ property:'scale', to: this.getRandomScale() },
+			{ property:'rotation', to: this.getRandomRotation() },
+			{ property:'scale', to: { x: 1, y: 1, z: 50 } },
+			{ property:'rotation', to: { x: 0, y:0, z: 0 } },
+			{ property:'position', to: this.getRandomPosition() },
+
+			{ property:'scale', to: { x: 1, y: 1, z: 1 } },
+			// { property:'position', to: this.getRandomPosition() },
+			// { property:'position', to: '0 0 0' },
+			// { property:'rotation', to: '0 0 0' },
 		];
-		return pos.join(" ");
 	},
-	getRandomRotationString() {
-		var angles = [
-			( this.randomRange(0,1) === 0) ? 0 : this.randomRange( -4, 4 ) * 90,
-			( this.randomRange(0,1) === 0) ? 0 : this.randomRange( -4, 4 ) * 90,
-			( this.randomRange(0,1) === 0) ? 0 : this.randomRange( -4, 4 ) * 90
-		];
-		return angles.join(" ");
+	getRandomPosition() {
+		return {
+			x: 0,
+			y: 0,
+			z: ( this.randomInt(0,1) === 0) ? 0 : this.randomStep( 0, 2, 0.25 )
+		};
+		return {
+			x: ( this.randomInt(0,1) === 0) ? 0 : this.randomStep( 0, 2, 0.25 ),
+			y: ( this.randomInt(0,1) === 0) ? 0 : this.randomStep( 0, 2, 0.25 ),
+			z: ( this.randomInt(0,1) === 0) ? 0 : this.randomStep( 0, 2, 0.25 )
+		};
+	},
+	getRandomRotation() {
+		return {
+			x: ( this.randomInt(0,1) === 0) ? 0 : this.randomStep( -180, 180, 45 ),
+			y: ( this.randomInt(0,1) === 0) ? 0 : this.randomStep( -180, 180, 45 ),
+			z: ( this.randomInt(0,1) === 0) ? 0 : this.randomStep( -180, 180, 45 )
+		};
+	},
+	getRandomScale() {
+		return {
+			x: ( this.randomInt(0,1) === 0) ? 1 : this.randomStep( 0.25, 2, 0.25 ),
+			y: ( this.randomInt(0,1) === 0) ? 1 : this.randomStep( 0.25, 2, 0.25 ),
+			z: ( this.randomInt(0,1) === 0) ? 1 : this.randomStep( 1, 50, 25 ),
+		};
 	},
 	createAnimations() {
 		this.animationId = 0;
@@ -80,6 +96,7 @@ AFRAME.registerSystem( 'layer-animation', {
 			this.animationId++;
 			if( this.animationId === this.animations.length ) {
 				console.log('all animations complete')
+				this.animations = this.createRandomTransforms();
 				this.animationId = 1;
 			}
 			this.startAnimations(this.animations[this.animationId]);
@@ -87,22 +104,35 @@ AFRAME.registerSystem( 'layer-animation', {
 
 	},
 	startAnimations( params ) {
-		console.log('startAnimations')
-		let speed = 1000;
+		console.log('startAnimations', params.property, params.to)
+		let speed = 2000;
 		let delay = 2000;
 		let masterDelay = 1000;//speed + delay;
 		let el;
 		this.completeCount = 0;
+		let to = new THREE.Vector3();
+		let from = new THREE.Vector3();
+
 		for ( let i = 0; i < this.total; i++) {
 			el = this.entities[i];
+			to.copy( params.to );
+			from.copy( params.to ).negate();
+
+			if( params.property !== 'scale') {
+				to.sub(from);
+				to.multiplyScalar( i / (this.total-1) );
+				to.add(from);
+			}
+
 			el.setAttribute( 'animation__'+this.animationCount, {
 				dur: speed,
-				easing: 'easeInOutSine',
+				easing: 'easeInOutElastic',
 				loop: false,
 				property: params.property,
 				delay: delay*i/this.total,
-				to: params.to
+				to: to
 			});
+
 			el.addEventListener('animation__' + +this.animationCount + '-complete', (event) => {
 				this.completeCount++;
 				if( this.completeCount === this.total ) {

@@ -24,7 +24,7 @@ class StaticMathUtils {
 	/**
 	 * Returns random color between #000000 -> #FFFFFF
 	 */
-	getRandomColor() {
+	randomColor() {
 		var letters = '0123456789ABCDEF';
 		var color = '#';
 		for ( var i = 0; i < 6; i++) {
@@ -34,9 +34,16 @@ class StaticMathUtils {
 	}
 
 	/**
+	 * Returns random value between range based on step
+	 */
+	randomStep( min, max, step ) {
+	    return  ( Math.floor( Math.random() * (max-min) / step ) * step ) + min;
+	}
+
+	/**
 	 * Returns random interger value between range
 	 */
-	randomIntFromInterval( min, max ) {
+	randomInt( min, max ) {
 	    return Math.floor( Math.random() * ( max - min + 1 ) + min );
 	}
 
