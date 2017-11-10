@@ -22,6 +22,13 @@
 class StaticMathUtils {
 
 	/**
+	 * Returns random boolean value
+	 */
+	randomBool() {
+		return this.randomInt( 0, 1 ) === 0 ;
+	}
+
+	/**
 	 * Returns random color between #000000 -> #FFFFFF
 	 */
 	randomColor() {
