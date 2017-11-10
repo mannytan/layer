@@ -58,7 +58,7 @@ AFRAME.registerSystem( 'layer', {
 
 		// creates layer container
 		this.layerContainer = document.createElement( 'a-entity' );
-		this.layerContainer.setAttribute( 'position', { x: 0, y: 1.6, z: -6 } );
+		this.layerContainer.setAttribute( 'position', { x: 0, y: 1.6, z: -3 } );
 		this.layerContainer.setAttribute( 'slow-rotate', { speed: 0.05 } );
 		this.scene.appendChild( this.layerContainer );
 

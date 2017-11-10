@@ -12,6 +12,8 @@
 //   See the License for the specific language governing permissions and
 // limitations under the License.
 
+const FRONT_COLOR = 0x111111;
+const SIDES_COLOR = 0xEEEEEE;
 AFRAME.registerComponent('layer', {
 	dependencies: [ 'layer-data' ],
 
@@ -27,34 +29,65 @@ AFRAME.registerComponent('layer', {
 			this.system.registerMe(this.el);
 		} );
 
-		let geometry = new THREE.TorusGeometry( 0.5, 0.25, 4, this.system.ticks );
-		let material = new THREE.MeshPhongMaterial( {
+		this.geometry = new THREE.TorusGeometry( 0.5, 0.25, 4, this.system.ticks );
+		this.material = new THREE.MeshBasicMaterial( {
 			color: 0xFFFFFF,
 			flatShading: true,
 			wireframe: false,
 			vertexColors: THREE.FaceColors,
 			transparent:true,
-			// opacity: 0.75
-			// blending: THREE.MultiplyBlending
+			// opacity: 0.75,
+			// blending: this.data.seed%2 === 1 ? THREE.MultiplyBlending : THREE.NormalBlending
+			blending: THREE.NormalBlending
 		} );
 
-		var faces = geometry.faces;
+		// NoBlending,
+		// NormalBlending,
+		// AdditiveBlending,
+		// SubtractiveBlending,
+		// MultiplyBlending,
 
-		let totalTicks = this.system.ticks*2;
-		for( var i = 0 ; i < (faces.length/4); i++){
-			faces[ i + totalTicks*0 ].color.setHex( 0xEF2D5E );
-			faces[ i + totalTicks*1 ].color.setHex( 0x4CC3D9 );
-			faces[ i + totalTicks*2 ].color.setHex( 0xEF2D5E );
-			faces[ i + totalTicks*3 ].color.setHex( 0x4CC3D9 );
-		}
-		geometry.elementsNeedUpdate = true;
+		this.updateFrontColors( FRONT_COLOR );
+		this.updateSideColors( SIDES_COLOR );
+		this.updateOutermostSideColor();
 
-		this.el.setObject3D('obj', new THREE.Mesh( geometry, material ));
+		this.el.setObject3D('obj', new THREE.Mesh( this.geometry, this.material ));
 
 		this.x = 0;
 		this.y = 0;
 		this.z = 0;
 	},
+
+	updateColors( a, b, color ) {
+		let faces = this.geometry.faces;
+		let totalTicks = this.system.ticks*2;
+		for( let i = 0 ; i < (faces.length/4); i++){
+			faces[ i + totalTicks * a ].color.setHex( color );
+			faces[ i + totalTicks * b ].color.setHex( color );
+		}
+		this.geometry.elementsNeedUpdate = true;
+	},
+
+	updateFrontColors( color ) {
+		this.updateColors( 0, 2, color );
+	},
+
+	updateSideColors( color ) {
+		this.updateColors( 1, 3, color );
+	},
+
+	// set outermost band
+	updateOutermostSideColor() {
+		let faces = this.geometry.faces;
+		let totalTicks = this.system.ticks*2;
+		if ( this.data.seed === this.system.total - 1 ){
+			for( let i = 0 ; i < (faces.length/4); i++){
+				faces[ i + totalTicks*1 ].color.setHex( FRONT_COLOR );
+			}
+		}
+		this.geometry.elementsNeedUpdate = true;
+	},
+
 	update () {
 		this.el.setAttribute( 'position', {
 			x: 0,
