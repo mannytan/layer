@@ -20,7 +20,7 @@ AFRAME.registerComponent('layer', {
 	},
 
 	init () {
-		console.log( 'layer-component', 'init', this.data.seed );
+		// console.log( 'layer-component', 'init', this.data.seed );
 		this.normal = this.data.seed / (this.system.total);
 
 		this.el.addEventListener( 'object3dset', event => {
@@ -28,7 +28,27 @@ AFRAME.registerComponent('layer', {
 		} );
 
 		let geometry = new THREE.TorusGeometry( 0.5, 0.25, 4, this.system.ticks );
-		let material = new THREE.MeshPhongMaterial( { color: 0xEF2D5E, flatShading: true, wireframe: false, transparent:true, blending: THREE.MultiplyBlending } );
+		let material = new THREE.MeshPhongMaterial( {
+			color: 0xFFFFFF,
+			flatShading: true,
+			wireframe: false,
+			vertexColors: THREE.FaceColors,
+			transparent:true,
+			// opacity: 0.75
+			// blending: THREE.MultiplyBlending
+		} );
+
+		var faces = geometry.faces;
+
+		let totalTicks = this.system.ticks*2;
+		for( var i = 0 ; i < (faces.length/4); i++){
+			faces[ i + totalTicks*0 ].color.setHex( 0xEF2D5E );
+			faces[ i + totalTicks*1 ].color.setHex( 0x4CC3D9 );
+			faces[ i + totalTicks*2 ].color.setHex( 0xEF2D5E );
+			faces[ i + totalTicks*3 ].color.setHex( 0x4CC3D9 );
+		}
+		geometry.elementsNeedUpdate = true;
+
 		this.el.setObject3D('obj', new THREE.Mesh( geometry, material ));
 
 		this.x = 0;
