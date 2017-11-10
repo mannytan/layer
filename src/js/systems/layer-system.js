@@ -45,7 +45,7 @@ AFRAME.registerSystem( 'layer', {
 		// creates and transforms proxy entity
 		this.proxyEl = document.createElement( 'a-entity' );
 		this.proxyEl.setAttribute( 'position', { x: 0, y: 0, z: 0 } );
-		this.proxyEl.setAttribute( 'scale', { x: -2, y: 0.02, z: 2 } );
+		this.proxyEl.setAttribute( 'scale', { x: -2, y: 0.05, z: 2 } );
 		this.proxyEl.setAttribute( 'rotation', { x: 90, y: 0, z: 0 } );
 		this.proxyEl.setAttribute( 'visible', false );
 		this.proxyEl.addEventListener( 'object3dset', event => {
@@ -59,7 +59,7 @@ AFRAME.registerSystem( 'layer', {
 		// creates layer container
 		this.layerContainer = document.createElement( 'a-entity' );
 		this.layerContainer.setAttribute( 'position', { x: 0, y: 1.6, z: -6 } );
-		this.layerContainer.setAttribute( 'slow-rotate', { speed: 0.25 } );
+		this.layerContainer.setAttribute( 'slow-rotate', { speed: 0.05 } );
 		this.scene.appendChild( this.layerContainer );
 
 		// creates layers
