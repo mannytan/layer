@@ -28,6 +28,8 @@ AFRAME.registerSystem( 'layer-animation', {
 		this.randomInt = MathUtils.randomInt;
 		this.randomStep = MathUtils.randomStep;
 		this.randomColor = MathUtils.randomColor;
+		this.randomBool = MathUtils.randomBool;
+
 		this.scene = this.el.sceneEl;
 		this.entities = null;
 		this.total = 0;
@@ -49,14 +51,14 @@ AFRAME.registerSystem( 'layer-animation', {
 
 	createRandomTransforms() {
 		return [
-			{ property:'position', to: this.getRandomPosition() },
-			{ property:'scale', to: this.getRandomScale() },
-			{ property:'rotation', to: this.getRandomRotation() },
-			{ property:'scale', to: { x: 1, y: 1, z: 50 } },
-			{ property:'rotation', to: { x: 0, y:0, z: 0 } },
-			{ property:'position', to: this.getRandomPosition() },
+			{ property:'position', 	to: this.getRandomPosition(), 	spread: this.randomBool() },
+			{ property:'scale',	 	to: this.getRandomScale(), 		spread: false },
+			{ property:'rotation', 	to: this.getRandomRotation(), 	spread: this.randomBool() },
+			{ property:'scale', 	to: { x: 1, y: 1, z: 50 }, 		spread: false },
+			{ property:'rotation', 	to: { x: 0, y: 0, z: 0 }, 		spread: this.randomBool() },
+			{ property:'position', 	to: this.getRandomPosition(), 	spread: this.randomBool() },
 
-			{ property:'scale', to: { x: 1, y: 1, z: 1 } },
+			{ property:'scale', 	to: { x: 1, y: 1, z: 1 }, 		spread: false },
 			// { property:'position', to: this.getRandomPosition() },
 			// { property:'position', to: '0 0 0' },
 			// { property:'rotation', to: '0 0 0' },
@@ -66,26 +68,31 @@ AFRAME.registerSystem( 'layer-animation', {
 		return {
 			x: 0,
 			y: 0,
-			z: ( this.randomInt(0,1) === 0) ? 0 : this.randomStep( 0, 2, 0.25 )
+			z: this.randomStep( -2, 2, 0.25 )
 		};
 		return {
-			x: ( this.randomInt(0,1) === 0) ? 0 : this.randomStep( 0, 2, 0.25 ),
-			y: ( this.randomInt(0,1) === 0) ? 0 : this.randomStep( 0, 2, 0.25 ),
-			z: ( this.randomInt(0,1) === 0) ? 0 : this.randomStep( 0, 2, 0.25 )
+			x: this.randomBool() ? 0 : this.randomStep( 0, 2, 0.25 ),
+			y: this.randomBool() ? 0 : this.randomStep( 0, 2, 0.25 ),
+			z: this.randomBool() ? 0 : this.randomStep( 0, 2, 0.25 )
 		};
 	},
 	getRandomRotation() {
 		return {
-			x: ( this.randomInt(0,1) === 0) ? 0 : this.randomStep( -180, 180, 45 ),
-			y: ( this.randomInt(0,1) === 0) ? 0 : this.randomStep( -180, 180, 45 ),
-			z: ( this.randomInt(0,1) === 0) ? 0 : this.randomStep( -180, 180, 45 )
+			x: this.randomStep( -90, 90, 45 ),
+			y: this.randomStep( -90, 90, 45 ),
+			z: 0
 		};
 	},
 	getRandomScale() {
 		return {
-			x: ( this.randomInt(0,1) === 0) ? 1 : this.randomStep( 0.25, 2, 0.25 ),
-			y: ( this.randomInt(0,1) === 0) ? 1 : this.randomStep( 0.25, 2, 0.25 ),
-			z: ( this.randomInt(0,1) === 0) ? 1 : this.randomStep( 1, 50, 25 ),
+			x: this.randomStep( 0.25, 2, 0.25 ),
+			y: this.randomStep( 0.25, 2, 0.25 ),
+			z: this.randomStep( 1, 50, 25 ),
+		};
+		return {
+			x: this.randomBool() ? 1 : this.randomStep( 0.25, 2, 0.25 ),
+			y: this.randomBool() ? 1 : this.randomStep( 0.25, 2, 0.25 ),
+			z: this.randomBool() ? 1 : this.randomStep( 1, 50, 25 ),
 		};
 	},
 	createAnimations() {
@@ -104,7 +111,7 @@ AFRAME.registerSystem( 'layer-animation', {
 
 	},
 	startAnimations( params ) {
-		console.log('startAnimations', params.property, params.to)
+		console.log('startAnimations', params.property, params.to, params.spread)
 		let speed = 2000;
 		let delay = 2000;
 		let masterDelay = 1000;//speed + delay;
@@ -116,9 +123,9 @@ AFRAME.registerSystem( 'layer-animation', {
 		for ( let i = 0; i < this.total; i++) {
 			el = this.entities[i];
 			to.copy( params.to );
-			from.copy( params.to ).negate();
 
-			if( params.property !== 'scale') {
+			if( params.spread ) {
+				from.copy( params.to ).negate();
 				to.sub(from);
 				to.multiplyScalar( i / (this.total-1) );
 				to.add(from);
