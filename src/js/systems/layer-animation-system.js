@@ -105,7 +105,7 @@ AFRAME.registerSystem( 'layer-animation', {
 				console.log('all animations complete')
 
 				this.entities.forEach( el => {
-					el.components[ 'layer' ].flipVertices();
+					el.components[ 'layer' ].shiftVertices();
 				} );
 
 				this.animations = this.createRandomTransforms();

@@ -12,9 +12,9 @@
 //   See the License for the specific language governing permissions and
 // limitations under the License.
 
-const FRONT_COLOR = 0x111111;
+const BLACK_COLOR = 0x111111;
 const RED_COLOR = 0xEE1111;
-const SIDES_COLOR = 0xEEEEEE;
+const WHITE_COLOR = 0xEEEEEE;
 AFRAME.registerComponent('layer', {
 	dependencies: [ 'layer-data' ],
 
@@ -41,9 +41,8 @@ AFRAME.registerComponent('layer', {
 			vertexColors: THREE.FaceColors,
 		} );
 
-		this.updateFrontColors( FRONT_COLOR );
-		this.updateSideColors( SIDES_COLOR );
-
+		this.updateFrontColors( BLACK_COLOR );
+		this.updateSideColors( WHITE_COLOR );
 		this.el.setObject3D('obj', new THREE.Mesh( this.geometry, this.material ));
 
 		this.x = 0;
@@ -53,10 +52,32 @@ AFRAME.registerComponent('layer', {
 		this.targetGeometry = this.geometry.clone();
 	},
 
-	flipVertices() {
-		console.log('flipVertices')
-		this.isFlipped = !this.isFlipped;
-		this.mapVertices( this.geometry );
+	/**
+	 * creates order of torus geometry vertices
+	 * based on sphere geometry's step order
+	 * below is an example of 3 step order
+
+	 * cross section of a single sphere tick	* winding order rectangle defined by sphere
+	 * 0 ------- 6  <- inner most id			* [ 0, 1, 5, 6 ]
+	 *  1 ----- 5								* [ 1, 2, 4, 5 ]
+	 *   2 -- 4									* [ 2, 3, 3, 4 ]
+	 * 	   33  <- outer most id
+	 */
+	getStepOrder () {
+		const doubled = this.system.total * 2;
+		let stepOrder = [
+			this.data.seed + 0,
+			this.data.seed + 1,
+			doubled - this.data.seed - 1,
+			doubled - this.data.seed - 0,
+		];
+
+		if ( this.isFlipped ) {
+			let first = stepOrder.shift();
+			stepOrder.push(first);
+		}
+
+		return stepOrder;
 	},
 
 	/**
@@ -65,37 +86,49 @@ AFRAME.registerComponent('layer', {
 	mapVertices( geometry ) {
 		let proxyGeometry = this.system.proxyEl.getObject3D( 'obj' ).geometry
 		let proxyVertices = proxyGeometry.vertices;
-		let stepOrder = [
-			-1 + this.data.seed,
-			 0 + this.data.seed,
-			-2 - this.data.seed + this.system.total * 2,
-			-1 - this.data.seed + this.system.total * 2,
-		];
-		if ( this.isFlipped ) {
-			let first = stepOrder.shift();
-			stepOrder.push(first);
-		}
+
+		const firstProxyVertex = 0;
+		const lastProxyVertex = proxyVertices.length-1;
+		const doubled = this.system.total * 2;
+
 		let vertices = geometry.vertices;
+		let stepOrder = this.getStepOrder();
+
 		vertices.forEach( ( vertex, id ) => {
 			let tick = parseInt( id / this.system.ticks );
-			let seed;
-			seed = id % this.system.ticks + stepOrder[tick] * this.system.ticks + 1;
-			seed = ( stepOrder[tick] === -1 ) ? 0: seed;
-			seed = ( stepOrder[tick] === this.system.total * 2 - 1 ) ? proxyVertices.length-1: seed;
+			let seed = 1; 											// offset for first sphere vertice
+			seed += id % this.system.ticks;							// actual tick position
+			seed += this.system.ticks * ( stepOrder[ tick ] - 1 ); 	// ticks step order
+
+			// account for innermost vertices
+			seed = ( stepOrder[ tick ] === 0 ) ? firstProxyVertex : seed; // center vertice
+			seed = ( stepOrder[ tick ] === doubled  ) ? lastProxyVertex : seed;
+
 			vertex.copy( proxyVertices[ seed ] );
 		});
 		geometry.verticesNeedUpdate = true;
 
 	},
 
+	/**
+	 * vertices step order is shifted by 1
+	 */
+	shiftVertices() {
+		console.log('shiftVertices')
+		this.isFlipped = !this.isFlipped;
+		this.mapVertices( this.geometry );
+	},
+
+	/**
+	 * set colors of each torus
+	 * a, b refer to which of the 4 torus sides get colored
+	 */
 	updateFrontColors( color ) {
 		this.updateColors( 0, 2, color );
 	},
-
 	updateSideColors( color ) {
 		this.updateColors( 1, 3, color );
 	},
-
 	updateColors( a, b, color ) {
 		let faces = this.geometry.faces;
 		let totalTicks = this.system.ticks*2;
