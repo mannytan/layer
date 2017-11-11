@@ -13,6 +13,7 @@
 // limitations under the License.
 
 const FRONT_COLOR = 0x111111;
+const RED_COLOR = 0xEE1111;
 const SIDES_COLOR = 0xEEEEEE;
 AFRAME.registerComponent('layer', {
 	dependencies: [ 'layer-data' ],
@@ -24,48 +25,67 @@ AFRAME.registerComponent('layer', {
 	init () {
 		// console.log( 'layer-component', 'init', this.data.seed );
 		this.normal = this.data.seed / (this.system.total);
-
+		this.isFlipped = false;
 		this.el.addEventListener( 'object3dset', event => {
 			this.system.registerMe(this.el);
 		} );
 
+		// transparent:true,
+		// blending: THREE.NormalBlending
+		// NoBlending, NormalBlending, AdditiveBlending, SubtractiveBlending, MultiplyBlending,
 		this.geometry = new THREE.TorusGeometry( 0.5, 0.25, 4, this.system.ticks );
 		this.material = new THREE.MeshBasicMaterial( {
 			color: 0xFFFFFF,
 			flatShading: true,
 			wireframe: false,
 			vertexColors: THREE.FaceColors,
-			transparent:true,
-			// opacity: 0.75,
-			// blending: this.data.seed%2 === 1 ? THREE.MultiplyBlending : THREE.NormalBlending
-			blending: THREE.NormalBlending
 		} );
-
-		// NoBlending,
-		// NormalBlending,
-		// AdditiveBlending,
-		// SubtractiveBlending,
-		// MultiplyBlending,
 
 		this.updateFrontColors( FRONT_COLOR );
 		this.updateSideColors( SIDES_COLOR );
-		this.updateOutermostSideColor();
 
 		this.el.setObject3D('obj', new THREE.Mesh( this.geometry, this.material ));
 
 		this.x = 0;
 		this.y = 0;
 		this.z = 0;
+
+		this.targetGeometry = this.geometry.clone();
 	},
 
-	updateColors( a, b, color ) {
-		let faces = this.geometry.faces;
-		let totalTicks = this.system.ticks*2;
-		for( let i = 0 ; i < (faces.length/4); i++){
-			faces[ i + totalTicks * a ].color.setHex( color );
-			faces[ i + totalTicks * b ].color.setHex( color );
+	flipVertices() {
+		console.log('flipVertices')
+		this.isFlipped = !this.isFlipped;
+		this.mapVertices( this.geometry );
+	},
+
+	/**
+	 * takes toruses/tori geometry and remaps vertices based on sphere geometry
+	 */
+	mapVertices( geometry ) {
+		let proxyGeometry = this.system.proxyEl.getObject3D( 'obj' ).geometry
+		let proxyVertices = proxyGeometry.vertices;
+		let stepOrder = [
+			-1 + this.data.seed,
+			 0 + this.data.seed,
+			-2 - this.data.seed + this.system.total * 2,
+			-1 - this.data.seed + this.system.total * 2,
+		];
+		if ( this.isFlipped ) {
+			let first = stepOrder.shift();
+			stepOrder.push(first);
 		}
-		this.geometry.elementsNeedUpdate = true;
+		let vertices = geometry.vertices;
+		vertices.forEach( ( vertex, id ) => {
+			let tick = parseInt( id / this.system.ticks );
+			let seed;
+			seed = id % this.system.ticks + stepOrder[tick] * this.system.ticks + 1;
+			seed = ( stepOrder[tick] === -1 ) ? 0: seed;
+			seed = ( stepOrder[tick] === this.system.total * 2 - 1 ) ? proxyVertices.length-1: seed;
+			vertex.copy( proxyVertices[ seed ] );
+		});
+		geometry.verticesNeedUpdate = true;
+
 	},
 
 	updateFrontColors( color ) {
@@ -76,24 +96,14 @@ AFRAME.registerComponent('layer', {
 		this.updateColors( 1, 3, color );
 	},
 
-	// set outermost band
-	updateOutermostSideColor() {
+	updateColors( a, b, color ) {
 		let faces = this.geometry.faces;
 		let totalTicks = this.system.ticks*2;
-		if ( this.data.seed === this.system.total - 1 ){
-			for( let i = 0 ; i < (faces.length/4); i++){
-				faces[ i + totalTicks*1 ].color.setHex( FRONT_COLOR );
-			}
+		for( let i = 0 ; i < (faces.length/4); i++){
+			faces[ i + totalTicks * a ].color.setHex( color );
+			faces[ i + totalTicks * b ].color.setHex( color );
 		}
 		this.geometry.elementsNeedUpdate = true;
-	},
-
-	update () {
-		this.el.setAttribute( 'position', {
-			x: 0,
-			y: 0,
-			z: 0
-		} );
 	},
 
 	remove () {

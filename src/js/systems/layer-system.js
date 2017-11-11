@@ -58,7 +58,7 @@ AFRAME.registerSystem( 'layer', {
 
 		// creates layer container
 		this.layerContainer = document.createElement( 'a-entity' );
-		this.layerContainer.setAttribute( 'position', { x: 0, y: 1.6, z: -3 } );
+		this.layerContainer.setAttribute( 'position', { x: 0, y: 1.6, z: -6 } );
 		this.layerContainer.setAttribute( 'slow-rotate', { speed: 0.05 } );
 		this.scene.appendChild( this.layerContainer );
 
@@ -77,37 +77,17 @@ AFRAME.registerSystem( 'layer', {
 	 * takes toruses/tori geometry and remaps vertices based on sphere geometry
 	 */
 	tryMapVertices() {
+
 		if ( !this.isProxyReady ) return;
 		if ( !this.areLayersReady ) return;
 		console.log( 'layer-system', 'tryMapVertices' );
 
 		let proxyGeometry = this.proxyEl.getObject3D( 'obj' ).geometry
 		let proxyVertices = proxyGeometry.vertices;
-
+		let layerComponent;
 		for ( let i = 0; i < this.total; i++) {
-
-			let stepOrder = [
-				-1 + i,
-				 0 + i,
-				-1 - i + this.total*2,
-				 0 - i + this.total*2
-			];
-
-			let geometry = this.entities[ i ].getObject3D( 'obj' ).geometry
-			let vertices = geometry.vertices;
-
-			vertices.forEach( ( vertex, id ) => {
-				let tick = parseInt( id / this.ticks );
-				let seed;
-				seed = id % this.ticks + stepOrder[tick] * this.ticks + 1;
-
-				// required for center layer
-				seed = ( stepOrder[tick] === -1 ) ? 0: seed;
-				seed = ( stepOrder[tick] === this.total * 2 ) ? proxyVertices.length-1: seed;
-				vertex.copy( proxyVertices[ seed ] );
-			});
-			geometry.verticesNeedUpdate = true;
-
+			layerComponent = this.entities[ i ].components[ 'layer' ];
+			layerComponent.mapVertices( layerComponent.geometry );
 		}
 		this.scene.emit( 'layers-ready' );
 	},
@@ -131,13 +111,17 @@ AFRAME.registerSystem( 'layer', {
 		el.removeAttribute( 'scale' );
 		el.removeAttribute( 'rotation' );
 		el.removeAttribute( 'position' );
+
+		// vertices[37].z += 3;
+		// el.getObject3D( 'obj' ).geometry.elementsNeedUpdate = true;
+
 	},
 
 	createProxyEntity( total, ticks ) {
-		let totalSteps = total * 2 + 1;
+		let totalSteps = total * 2;
 		let geometry = new THREE.SphereGeometry( 1, ticks, totalSteps );
 		let material = new THREE.MeshPhongMaterial( {
-			color: 0x4CC3D9,
+			color: 0x000000,
 			flatShading: true,
 			wireframe: true
 		} );

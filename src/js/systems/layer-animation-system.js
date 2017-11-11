@@ -57,8 +57,8 @@ AFRAME.registerSystem( 'layer-animation', {
 			{ property:'scale', 	to: { x: 1, y: 1, z: 50 }, 		spread: false },
 			{ property:'rotation', 	to: { x: 0, y: 0, z: 0 }, 		spread: this.randomBool() },
 			{ property:'position', 	to: this.getRandomPosition(), 	spread: this.randomBool() },
-
 			{ property:'scale', 	to: { x: 1, y: 1, z: 1 }, 		spread: false },
+
 			// { property:'position', to: this.getRandomPosition() },
 			// { property:'position', to: '0 0 0' },
 			// { property:'rotation', to: '0 0 0' },
@@ -87,7 +87,7 @@ AFRAME.registerSystem( 'layer-animation', {
 		return {
 			x: this.randomStep( 0.25, 2, 0.25 ),
 			y: this.randomStep( 0.25, 2, 0.25 ),
-			z: this.randomStep( 1, 50, 25 ),
+			z: this.randomStep( 10, 50, 25 ),
 		};
 		return {
 			x: this.randomBool() ? 1 : this.randomStep( 0.25, 2, 0.25 ),
@@ -103,6 +103,11 @@ AFRAME.registerSystem( 'layer-animation', {
 			this.animationId++;
 			if( this.animationId === this.animations.length ) {
 				console.log('all animations complete')
+
+				this.entities.forEach( el => {
+					el.components[ 'layer' ].flipVertices();
+				} );
+
 				this.animations = this.createRandomTransforms();
 				this.animationId = 1;
 			}
