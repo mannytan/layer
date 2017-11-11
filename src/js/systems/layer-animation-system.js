@@ -52,6 +52,9 @@ AFRAME.registerSystem( 'layer-animation', {
 
 	createRandomTransforms() {
 		return [
+			// { property:'scale', 	to: { x: 1, y: 1, z: 50 }, 		spread: false },
+			// { property:'scale', 	to: { x: 1, y: 1, z: 10 }, 		spread: false },
+
 			{ property:'position', 	to: this.getRandomPosition(), 	spread: this.randomBool() },
 			{ property:'scale',	 	to: this.getRandomScale(), 		spread: false },
 			{ property:'rotation', 	to: this.getRandomRotation(), 	spread: this.randomBool() },
@@ -110,7 +113,7 @@ AFRAME.registerSystem( 'layer-animation', {
 				} );
 
 				this.animations = this.createRandomTransforms();
-				this.animationId = 1;
+				this.animationId = 0;
 			}
 			this.startAnimations(this.animations[this.animationId]);
 		});

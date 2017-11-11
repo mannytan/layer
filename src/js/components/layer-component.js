@@ -17,6 +17,9 @@
 const BLACK_COLOR = 0x111111;
 const RED_COLOR = 0xEE1111;
 const WHITE_COLOR = 0xEEEEEE;
+
+import TWEEN from 'tween.js';
+
 AFRAME.registerComponent('layer', {
 	dependencies: [ 'layer-data' ],
 
@@ -118,7 +121,47 @@ AFRAME.registerComponent('layer', {
 	shiftVertices() {
 		console.log('shiftVertices')
 		this.isFlipped = !this.isFlipped;
-		this.mapVertices( this.geometry );
+		this.mapVertices( this.targetGeometry );
+		// this.mapVertices( this.geometry );
+
+		let opacity = { value: 10 }
+		this.opacityTween = new TWEEN.Tween( opacity )
+			.to( { value: 20 }, 2500 )
+			.delay( 2500*this.normal )
+			.easing( TWEEN.Easing.Cubic.InOut )
+			.onUpdate( normal => {
+				this.updateVertices( normal )
+			})
+			.onComplete( () => {
+				console.log( 'complete' )
+				// this.mapVertices( this.geometry );
+			})
+			.start();
+	},
+
+	updateVertices( normal ) {
+
+		let targetVertices = this.targetGeometry.vertices;
+		let vertices = this.geometry.vertices;
+		let total = vertices.length;
+		let vert = new THREE.Vector3();
+		for( let i = 0 ; i < total; i++){
+			vert.subVectors( this.targetGeometry.vertices[i], this.geometry.vertices[i] );
+			vert.multiplyScalar( normal );
+			vert.add( this.geometry.vertices[i] );
+			this.geometry.vertices[i].copy( vert );
+		}
+		this.geometry.elementsNeedUpdate = true;
+	},
+
+	updateColors( a, b, color ) {
+		let faces = this.geometry.faces;
+		let totalTicks = this.system.ticks*2;
+		for( let i = 0 ; i < (faces.length/4); i++){
+			faces[ i + totalTicks * a ].color.setHex( color );
+			faces[ i + totalTicks * b ].color.setHex( color );
+		}
+		this.geometry.elementsNeedUpdate = true;
 	},
 
 	/**
@@ -145,3 +188,9 @@ AFRAME.registerComponent('layer', {
 		this.system.unregisterMe(this.el);
 	}
 });
+
+function tweenUpdate() {
+    requestAnimationFrame(tweenUpdate);
+    TWEEN.update();
+}
+tweenUpdate();
