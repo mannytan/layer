@@ -133,7 +133,8 @@ AFRAME.registerComponent('layer', {
 				this.updateVertices( normal )
 			})
 			.onComplete( () => {
-				console.log( 'complete' )
+				// console.log( 'complete' )
+				// this.scene.emit( 'animation-complete' );
 				// this.mapVertices( this.geometry );
 			})
 			.start();
@@ -183,7 +184,13 @@ AFRAME.registerComponent('layer', {
 		}
 		this.geometry.elementsNeedUpdate = true;
 	},
-
+	tick() {
+		this.el.setAttribute('rotation', {
+			z: this.z
+		});
+		let speed = 0.25;
+		this.z += speed*(1-this.normal);
+	},
 	remove () {
 		this.system.unregisterMe(this.el);
 	}

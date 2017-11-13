@@ -67,12 +67,35 @@ AFRAME.registerSystem( 'layer', {
 		// creates layers
 		this.scene.addEventListener( 'layers3dset', event => {
 			this.bakeTransformsOnEntity( this.proxyEl );
+			this.morphSphereVertices();
 			this.areLayersReady = true;
 			this.tryMapVertices();
 		} );
 		for ( let i = 0; i < this.total; i++) {
 			this.createLayerEntity( i );
 		}
+	},
+
+	morphSphereVertices( ) {
+		let proxyGeometry = this.proxyEl.getObject3D( 'obj' ).geometry
+		let proxyVertices = proxyGeometry.vertices;
+
+		let normal = 0.5;
+
+		let min = 1000;
+		let max = -1000
+		proxyVertices.forEach( vertex => {
+			min =  ( vertex.y < min ) ? vertex.y : min;
+			max =  ( vertex.y > max ) ? vertex.y : max;
+		});
+		console.log(min,max)
+		proxyVertices.forEach( ( vertex, seed ) => {
+			vertex.z *= 2;
+			vertex.z *= ( vertex.y + 2 ) / ( max + 2 );
+			// console.log(seed, vertex.y/max)
+		});
+		proxyGeometry.elementsNeedUpdate = true;
+
 	},
 
 	/**
@@ -132,6 +155,7 @@ AFRAME.registerSystem( 'layer', {
 
 	createLayerEntity( seed ) {
 		let el = document.createElement( 'a-entity' );
+		el.id = seed;
 		el.setAttribute( 'layer', { seed: seed } );
 		this.layerContainer.appendChild( el );
 	},
