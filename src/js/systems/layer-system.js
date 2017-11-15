@@ -47,7 +47,7 @@ AFRAME.registerSystem( 'layer', {
 		// creates and transforms proxy entity
 		this.proxyEl = document.createElement( 'a-entity' );
 		this.proxyEl.setAttribute( 'position', { x: 0, y: 0, z: 0 } );
-		this.proxyEl.setAttribute( 'scale', { x: -2, y: 0.05, z: 2 } );
+		this.proxyEl.setAttribute( 'scale', { x: -2, y: 2, z: 2 } );
 		this.proxyEl.setAttribute( 'rotation', { x: 90, y: 0, z: 0 } );
 		this.proxyEl.setAttribute( 'visible', false );
 		this.proxyEl.addEventListener( 'object3dset', event => {
@@ -88,9 +88,8 @@ AFRAME.registerSystem( 'layer', {
 			min =  ( vertex.y < min ) ? vertex.y : min;
 			max =  ( vertex.y > max ) ? vertex.y : max;
 		});
-		console.log(min,max)
 		proxyVertices.forEach( ( vertex, seed ) => {
-			vertex.z *= 2;
+			// vertex.z += 0.1;
 			vertex.z *= ( vertex.y + 2 ) / ( max + 2 );
 			// console.log(seed, vertex.y/max)
 		});

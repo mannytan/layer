@@ -31,6 +31,16 @@ AFRAME.registerComponent('layer', {
 		// console.log( 'layer-component', 'init', this.data.seed );
 		this.normal = this.data.seed / (this.system.total);
 		this.isFlipped = false;
+
+
+		this.distance = 0;
+		this.speed = 0.05;
+
+		this.x = 0;
+		this.y = 0;
+		this.z = 0;
+		this.isTickReady = true;
+
 		this.el.addEventListener( 'object3dset', event => {
 			this.system.registerMe(this.el);
 		} );
@@ -39,6 +49,7 @@ AFRAME.registerComponent('layer', {
 		// blending: THREE.NormalBlending
 		// NoBlending, NormalBlending, AdditiveBlending, SubtractiveBlending, MultiplyBlending,
 		this.geometry = new THREE.TorusGeometry( 0.5, 0.25, 4, this.system.ticks );
+		this.targetGeometry = this.geometry.clone();
 		this.material = new THREE.MeshBasicMaterial( {
 			color: 0xFFFFFF,
 			flatShading: true,
@@ -50,11 +61,7 @@ AFRAME.registerComponent('layer', {
 		this.updateSideColors( WHITE_COLOR );
 		this.el.setObject3D('obj', new THREE.Mesh( this.geometry, this.material ));
 
-		this.x = 0;
-		this.y = 0;
-		this.z = 0;
 
-		this.targetGeometry = this.geometry.clone();
 	},
 
 	/**
@@ -115,31 +122,6 @@ AFRAME.registerComponent('layer', {
 
 	},
 
-	/**
-	 * vertices step order is shifted by 1
-	 */
-	shiftVertices() {
-		console.log('shiftVertices')
-		this.isFlipped = !this.isFlipped;
-		this.mapVertices( this.targetGeometry );
-		// this.mapVertices( this.geometry );
-
-		let opacity = { value: 10 }
-		this.opacityTween = new TWEEN.Tween( opacity )
-			.to( { value: 20 }, 2500 )
-			.delay( 2500*this.normal )
-			.easing( TWEEN.Easing.Cubic.InOut )
-			.onUpdate( normal => {
-				this.updateVertices( normal )
-			})
-			.onComplete( () => {
-				// console.log( 'complete' )
-				// this.scene.emit( 'animation-complete' );
-				// this.mapVertices( this.geometry );
-			})
-			.start();
-	},
-
 	updateVertices( normal ) {
 
 		let targetVertices = this.targetGeometry.vertices;
@@ -152,7 +134,7 @@ AFRAME.registerComponent('layer', {
 			vert.add( this.geometry.vertices[i] );
 			this.geometry.vertices[i].copy( vert );
 		}
-		this.geometry.elementsNeedUpdate = true;
+		this.geometry.verticesNeedUpdate = true;
 	},
 
 	updateColors( a, b, color ) {
@@ -163,6 +145,70 @@ AFRAME.registerComponent('layer', {
 			faces[ i + totalTicks * b ].color.setHex( color );
 		}
 		this.geometry.elementsNeedUpdate = true;
+	},
+
+
+	animateTransform( property, to ){
+		let proxy = { value: 10 }
+
+		let prop = new THREE.Vector3();
+		prop.copy( this.el.getAttribute( property ) );
+		this.transformTween = new TWEEN.Tween( prop )
+			.to( to, 1000 )
+			.delay( 2000*this.normal )
+			.easing( TWEEN.Easing.Cubic.InOut )
+			.onUpdate( normal => {
+				if( ! this.isTickReady ) return;
+				this.el.setAttribute( property, prop );
+				this.isTickReady = false;
+			})
+			.onComplete( () => {
+				this.el.emit( 'step-complete' );
+			})
+			.start();
+	},
+
+	/**
+	 * vertices step order is shifted by 1
+	 */
+	shiftVertices() {
+		this.isFlipped = !this.isFlipped;
+		this.mapVertices( this.targetGeometry );
+
+		let proxy = { value: 10 }
+		this.shiftTween = new TWEEN.Tween( proxy )
+			.to( { value: 20 }, 4000 )
+			.delay( 500*this.normal )
+			.easing( TWEEN.Easing.Cubic.InOut )
+			.onUpdate( normal => {
+				if( ! this.isTickReady ) return;
+
+				this.updateVertices( normal );
+				this.isTickReady = false;
+			})
+			.onComplete( () => {
+				this.el.emit( 'step-complete' );
+			})
+			.start();
+	},
+
+	tick() {
+		this.isTickReady = true;
+		// if( this.shiftTween ) {
+		// 	// this.updateVertices( this.shiftAnimationNormal )
+		// }
+
+		// if( this.transformTween ) {
+		// 	this.el.setAttribute( this.transformAnimationProperty , this.transformAnimationTo );
+		// }
+
+		// console.log( this.el.id, 'tick')
+		// this.el.setAttribute('rotation', {
+		// 	z: this.z
+		// });
+		// this.distance += this.speed;
+		// // this.z = speed*(1-this.normal);
+		// this.z = this.distance + 90*(this.normal);
 	},
 
 	/**
@@ -183,13 +229,6 @@ AFRAME.registerComponent('layer', {
 			faces[ i + totalTicks * b ].color.setHex( color );
 		}
 		this.geometry.elementsNeedUpdate = true;
-	},
-	tick() {
-		this.el.setAttribute('rotation', {
-			z: this.z
-		});
-		let speed = 0.25;
-		this.z += speed*(1-this.normal);
 	},
 	remove () {
 		this.system.unregisterMe(this.el);

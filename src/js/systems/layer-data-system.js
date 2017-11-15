@@ -17,7 +17,7 @@
 AFRAME.registerSystem( 'layer-data', {
 	schema: {
 		total: { type: 'number', default: 12 },
-		ticks: { type: 'number', default: 64 },
+		ticks: { type: 'number', default: 4 },
 	},
 
 	init () {

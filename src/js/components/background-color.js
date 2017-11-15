@@ -14,16 +14,13 @@
  * limitations under the License.
  */
 
-require( 'aframe' );
-require( './components/background-color' );
-require( './systems/layer-data-system' );
+AFRAME.registerComponent('background-color', {
+	schema: {
+        color: { type: 'color' }
+    },
 
+    update: function () { 
+        this.el.sceneEl.renderer.setClearColor(this.data.color);
+    }
 
-require( './systems/layer-system' );
-require( './components/layer-component' );
-
-require( './systems/layer-animation-system' );
-
-
-
-require( './components/slow-rotate-component' );
+});

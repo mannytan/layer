@@ -15,6 +15,7 @@
  */
 
 import { MathUtils } from '../utils/math-utils';
+import TWEEN from 'tween.js';
 
 AFRAME.registerSystem( 'layer-animation', {
 	dependencies: [ 'layer-data' ],
@@ -34,9 +35,8 @@ AFRAME.registerSystem( 'layer-animation', {
 		this.scene = this.el.sceneEl;
 		this.entities = null;
 		this.total = 0;
-		this.animationCount = 0;
 
-		this.animations = this.createTransformList();
+		this.toggleStyle = 0;
 
 		this.scene.addEventListener( 'layers-ready', event => {
 
@@ -51,79 +51,72 @@ AFRAME.registerSystem( 'layer-animation', {
 	},
 
 	createAnimationManager() {
-		this.animationId = 0;
-		this.startAnimation(this.animations[this.animationId]);
+		// event called when all transforms are done
+		this.el.addEventListener( 'all-list-transforms-complete', event => {	// console.log( 'all-list-transforms-complete' )
+			this.animationId = 0;
+			this.completeCount = 0;
+			this.animations = this.createTransformList();
+			this.animateTransform( this.animations[ this.animationId ] );
+		} );
 
+		// event called when all steps are done
+		this.el.addEventListener( 'all-steps-complete', event => {
+			// console.log( 'all-steps-complete' );
+			this.completeCount = 0;
 
-		let delayer = (t = 1) => { return new Promise( resolve => { setTimeout(resolve, t) }); }
-		this.el.addEventListener( 'steps-complete', event => {
-			delayer()
-			.then( () => {
-				let el;
-				for ( let i = 0; i < this.total; i++) {
-					el = this.entities[i];
-					el.removeAttribute( 'animation__'+this.animationCount);
-				}
-				this.animationCount++;
+			if ( (this.toggleStyle++%2) === 0 ) {
+				this.shiftVertices();
+			} else {
 				this.animationId++;
-				return delayer();
-			} )
-			.then( () => {
-
 				if( this.animationId === this.animations.length ) {
-					console.log('all animations complete')
-
-					this.entities.forEach( el => {
-						el.components[ 'layer' ].shiftVertices();
-					} );
-
-					this.animations = this.createTransformList();
-					this.animationId = 1;
+					this.el.emit( 'all-list-transforms-complete' );
+				} else {
+					this.animateTransform( this.animations[ this.animationId ] );
 				}
-				this.startAnimation(this.animations[this.animationId]);
-				return delayer();
-			} )
+			}
+		} );
+
+		// events called when a step is done
+		// step-complete is emited by layer component
+		this.entities.forEach( el => {
+			el.addEventListener( 'step-complete', (event) => {					// console.log( event.target.id, 'step-complete' )
+				this.completeCount++;
+				if( this.completeCount === this.total ) {
+					this.el.emit( 'all-steps-complete' );
+				}
+			} );
+		} );
+
+		this.animationId = 1;
+		this.completeCount = 0;
+		this.animations = this.createTransformList();
+		this.animateTransform( this.animations[ this.animationId ] );
+
+	},
+
+	shiftVertices() {
+		console.log( 'shiftVertices', this.animationId + '/' + this.animations.length );
+		this.entities.forEach( el => {
+			el.components[ 'layer' ].shiftVertices();
 		} );
 	},
 
 	/**
 	 * adds an animation attribute to all step entities
-	 * emits 'steps-complete' when all step animations have completed
+	 * emits 'all-steps-complete' when all step animations have completed
 	 */
-	startAnimation( params ) {
-		console.log('startAnimation', params.property, params.to, params.spread)
-		this.completeCount = 0;
-
-		let speed = 2000;
-		let delay = 2000;
-		let masterDelay = 1000;//speed + delay;
+	animateTransform( params ) {
+		console.log( 'animateTransform', this.animationId + '/' + this.animations.length, params.property, params.to, params.spread );
 		let normal;
 		let el;
-		let to = new THREE.Vector3();
+		let to;
 		let from = new THREE.Vector3();
 
 		for ( let i = 0; i < this.total; i++) {
 			el = this.entities[i];
 			normal = i / (this.total-1);
-
-			from.copy( params.to ).negate();
 			to = this.getTargetVector( from , params.to, normal, params.spread);
-
-			el.setAttribute( 'animation__'+this.animationCount, {
-				dur: speed,
-				easing: 'easeInOutElastic',
-				loop: false,
-				property: params.property,
-				delay: delay*i/this.total,
-				to: to
-			});
-
-			el.addEventListener('animation__' + +this.animationCount + '-complete', (event) => {
-				this.completeCount++;
-				if( this.completeCount === this.total ) {
-					this.el.emit( 'steps-complete' );
-				}
-			});
+			el.components['layer'].animateTransform( params.property, to );
 		}
 	},
 
@@ -146,13 +139,16 @@ AFRAME.registerSystem( 'layer-animation', {
 	createTransformList() {
 		return [
 			// { property:'position', 	to: this.getRandomPosition(), 	spread: true },
-			{ property:'scale', 	to: { x: 1, y: 1, z: 50 }, 		spread: false },
-			// { property:'rotation', 	to: this.getRandomRotation(), 	spread: this.randomBool() },
-			{ property:'scale', 	to: { x: 1, y: 1, z: 25 }, 		spread: false },
 			{ property:'scale', 	to: { x: 1, y: 1, z: 1 }, 		spread: false },
+			{ property:'position', 	to: this.getRandomPosition(), 		spread: true },
+			{ property:'rotation', 	to: this.getRandomRotation(), 	spread: true },
+			{ property:'scale',	 	to: this.getRandomScale(), 		spread: false },
+			{ property:'position', 	to: { x: 0, y: 0, z: 0 }, 		spread: false },
+			{ property:'rotation', 	to: { x: 0, y: 0, z: 0 }, 		spread: true },
+			{ property:'scale',	 	to: this.getRandomScale(), 		spread: false },
+			{ property:'scale', 	to: { x: 1, y: 1, z: 2 }, 		spread: false },
 			// { property:'rotation', 	to: this.getRandomRotation(), 	spread: this.randomBool() },
 
-			// { property:'scale',	 	to: this.getRandomScale(), 		spread: false },
 			// // { property:'rotation', 	to: this.getRandomRotation(), 	spread: this.randomBool() },
 			// { property:'scale', 	to: { x: 1, y: 1, z: 50 }, 		spread: false },
 			// // { property:'rotation', 	to: { x: 0, y: 0, z: 0 }, 		spread: this.randomBool() },
@@ -169,7 +165,7 @@ AFRAME.registerSystem( 'layer-animation', {
 		return {
 			x: 0,
 			y: 0,
-			z: this.randomStep( -2, 2, 0.25 )
+			z: this.randomStep( 3, 4, 0.5 )
 		};
 		return {
 			x: this.randomBool() ? 0 : this.randomStep( 0, 2, 0.25 ),
@@ -181,7 +177,7 @@ AFRAME.registerSystem( 'layer-animation', {
 		return {
 			x: 0,
 			y: 0,
-			z: this.randomStep( -180, 180, 22.5 )
+			z: this.randomStep( -180, 180, 10 )
 		};
 		return {
 			x: this.randomStep( -90, 90, 45 ),
@@ -191,9 +187,9 @@ AFRAME.registerSystem( 'layer-animation', {
 	},
 	getRandomScale() {
 		return {
-			x: this.randomStep( 0.25, 2, 0.25 ),
-			y: this.randomStep( 0.25, 2, 0.25 ),
-			z: this.randomStep( 10, 50, 25 ),
+			x: 1,
+			y: 1,
+			z: this.randomStep( 0.1, 2, 0.1 ),
 		};
 		return {
 			x: this.randomBool() ? 1 : this.randomStep( 0.25, 2, 0.25 ),
@@ -203,3 +199,10 @@ AFRAME.registerSystem( 'layer-animation', {
 	}
 
 });
+
+
+function tweenUpdate() {
+    requestAnimationFrame(tweenUpdate);
+    TWEEN.update();
+}
+tweenUpdate();
