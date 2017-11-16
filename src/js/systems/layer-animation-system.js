@@ -90,19 +90,12 @@ AFRAME.registerSystem( 'layer-animation', {
 
 	},
 
-	shiftVertices() {
-		console.log( 'shiftVertices', this.animationId + '/' + this.animations.length );
-		this.entities.forEach( el => {
-			el.components[ 'layer' ].shiftVertices();
-		} );
-	},
-
 	/**
 	 * adds an animation attribute to all step entities
 	 * emits 'all-steps-complete' when all step animations have completed
 	 */
 	animateTransform( params ) {
-		console.log( this.animationId + '/' + this.animations.length, params.property, params.to, params.spread );
+		// console.log( this.animationId + '/' + this.animations.length, params.property, params.to, params.spread );
 
 		let normal;
 		let el;
