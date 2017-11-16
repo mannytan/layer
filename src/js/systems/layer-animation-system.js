@@ -64,15 +64,11 @@ AFRAME.registerSystem( 'layer-animation', {
 			// console.log( 'all-steps-complete' );
 			this.completeCount = 0;
 
-			if ( (this.toggleStyle++%4) === 0 ) {
-				this.shiftVertices();
+			this.animationId++;
+			if( this.animationId === this.animations.length ) {
+				this.el.emit( 'all-list-transforms-complete' );
 			} else {
-				this.animationId++;
-				if( this.animationId === this.animations.length ) {
-					this.el.emit( 'all-list-transforms-complete' );
-				} else {
-					this.animateTransform( this.animations[ this.animationId ] );
-				}
+				this.animateTransform( this.animations[ this.animationId ] );
 			}
 		} );
 
@@ -106,7 +102,8 @@ AFRAME.registerSystem( 'layer-animation', {
 	 * emits 'all-steps-complete' when all step animations have completed
 	 */
 	animateTransform( params ) {
-		console.log( 'animateTransform', this.animationId + '/' + this.animations.length, params.property, params.to, params.spread );
+		console.log( this.animationId + '/' + this.animations.length, params.property, params.to, params.spread );
+
 		let normal;
 		let el;
 		let to;
@@ -117,7 +114,7 @@ AFRAME.registerSystem( 'layer-animation', {
 			normal = i / (this.total-1);
 			from.copy( params.to );
 			from.negate();
-			to = this.getTargetVector( from , params.to, normal, params.spread);
+			to = this.getTargetVector( from , params.to, normal, params.spread );
 			el.components['layer'].animateTransform( params.property, to );
 		}
 	},
@@ -149,28 +146,17 @@ AFRAME.registerSystem( 'layer-animation', {
 	},
 	createTransformList() {
 		return [
-			// { property:'position', 	to: this.getRandomPosition(), 	spread: true },
-			{ property:'scale', 	to: { x: 1, y: 1, z: 1 }, 		spread: false },
+			{ property:'shift',		to: { x: 0, y: 0, z: 0 }, 		spread: false },
 			{ property:'rotation', 	to: this.getRandomRotation(), 	spread: true },
 			{ property:'position', 	to: this.getRandomPosition(), 	spread: false },
-			{ property:'scale',	 	to: { x: 1, y: 1, z: 0.05 }, 	spread: false },
+			{ property:'scale',	 	to: this.getRandomScale(), 		spread: false },
 			{ property:'position', 	to: { x: 0, y: 0, z: 1 }, 		spread: false },
 			{ property:'rotation', 	to: this.getRandomRotation(), 	spread: true },
 
 			{ property:'scale',	 	to: { x: 1, y: 1, z: 1 }, 		spread: false },
 			{ property:'rotation', 	to: { x: 0, y: 0, z: 0 }, 		spread: true },
-			{ property:'scale',	 	to: this.getRandomScale(), 		spread: false },
-			// { property:'rotation', 	to: this.getRandomRotation(), 	spread: this.randomBool() },
+			{ property:'scale', 	to: { x: 1, y: 1, z: 1 }, 		spread: false },
 
-			// // { property:'rotation', 	to: this.getRandomRotation(), 	spread: this.randomBool() },
-			// { property:'scale', 	to: { x: 1, y: 1, z: 50 }, 		spread: false },
-			// // { property:'rotation', 	to: { x: 0, y: 0, z: 0 }, 		spread: this.randomBool() },
-			// { property:'position', 	to: this.getRandomPosition(), 	spread: this.randomBool() },
-			// { property:'scale', 	to: { x: 1, y: 1, z: 1 }, 		spread: false },
-
-			// { property:'position', to: this.getRandomPosition() },
-			// { property:'position', to: '0 0 0' },
-			// { property:'rotation', to: '0 0 0' },
 		];
 	},
 
@@ -178,12 +164,7 @@ AFRAME.registerSystem( 'layer-animation', {
 		return {
 			x: this.randomStep( 1, 4, 0.25 ),
 			y: 0,
-			z: 0 //this.randomStep( 4, 6, 0.5 )
-		};
-		return {
-			x: this.randomBool() ? 0 : this.randomStep( 0, 2, 0.25 ),
-			y: this.randomBool() ? 0 : this.randomStep( 0, 2, 0.25 ),
-			z: this.randomBool() ? 0 : this.randomStep( 0, 2, 0.25 )
+			z: 0
 		};
 	},
 	getRandomRotation() {
@@ -200,14 +181,9 @@ AFRAME.registerSystem( 'layer-animation', {
 	},
 	getRandomScale() {
 		return {
-			x: 1,
-			y: 1,
-			z: this.randomStep( 0.05, 0.5, 0.05 ),
-		};
-		return {
-			x: this.randomBool() ? 1 : this.randomStep( 0.25, 2, 0.25 ),
-			y: this.randomBool() ? 1 : this.randomStep( 0.25, 2, 0.25 ),
-			z: this.randomBool() ? 1 : this.randomStep( 1, 50, 25 ),
+			x: this.randomStep( 0.5, 1, 0.05 ),
+			y: this.randomStep( 0.5, 1, 0.05 ),
+			z: this.randomStep( 0.05, 1, 0.05 ),
 		};
 	}
 

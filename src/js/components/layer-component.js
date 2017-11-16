@@ -15,7 +15,7 @@
  */
 
 const BLACK_COLOR = 0x111111;
-const RED_COLOR = 0xEE1111;
+const RED_COLOR = 0x333333;
 const WHITE_COLOR = 0xEEEEEE;
 
 import TWEEN from 'tween.js';
@@ -56,11 +56,10 @@ AFRAME.registerComponent('layer', {
 			vertexColors: THREE.FaceColors,
 		} );
 
-		this.updateFrontColors( BLACK_COLOR );
-		this.updateSideColors( WHITE_COLOR );
+		this.updateColors( [ BLACK_COLOR, BLACK_COLOR, RED_COLOR, WHITE_COLOR ] );
+
 		this.el.addEventListener( 'object3dset', event => {
 			this.torusMesh = this.el.getObject3D( 'obj' );
-			// console.log( this.el.getObject3D( 'obj' ) );
 		} );
 		this.el.setObject3D('obj', new THREE.Mesh( this.geometry, this.material ));
 
@@ -140,55 +139,73 @@ AFRAME.registerComponent('layer', {
 		this.geometry.verticesNeedUpdate = true;
 	},
 
-	updateColors( a, b, color ) {
-		let faces = this.geometry.faces;
-		let totalTicks = this.system.ticks*2;
-		for( let i = 0 ; i < (faces.length/4); i++){
-			faces[ i + totalTicks * a ].color.setHex( color );
-			faces[ i + totalTicks * b ].color.setHex( color );
-		}
-		this.geometry.elementsNeedUpdate = true;
-	},
-
-
 	/**
-	 * transform animations [ 'position', 'scale', 'rotation' ]
-	 * onUpdate is called faster than the current frame rate
-	 * onUpdate is throttled with tick to prevent memory lockup
+	 * transform animations [ 'position', 'scale', 'rotation', 'shift' ]
 	 */
 	animateTransform( property, to ){
+		switch( property ) {
+			case 'scale':
+			case 'rotation':
+				this.animateProperty( property, to );
+				break;
+			case 'position':
+				this.animatePosition( to );
+				break;
+			case 'shift':
+				this.shiftVertices();
+				break;
+			default :
+				console.log( 'property', property );
+		}
+	},
 
+	/**
+ 	 * onUpdate is called faster than the current frame rate
+	 * onUpdate is throttled with tick to prevent memory lockup
+	 */
+	animateProperty( property, to ){
 		let prop = new THREE.Vector3();
-		if ( property === 'position' ) {
-			prop.copy( this.torusMesh.position );
-		} else {
-			prop.copy( this.el.getAttribute( property ) );
-		}
+		prop.copy( this.el.getAttribute( property ) );
 
-		let speed = ( property === 'position') ? 3000 : 1000;
-		let delay = ( property === 'position') ? 0 : 2000 * this.normal;
-
-		let transformMethod;
-
-		if ( property === 'position' ) {
-			transformMethod = () => {
-				if( ! this.isFrameReady ) return;
-				this.torusMesh.position.copy( prop );
-				this.isFrameReady = false;
-			}
-		} else {
-			transformMethod = () => {
-				if( ! this.isFrameReady ) return;
-				this.el.setAttribute( property, prop );
-				this.isFrameReady = false;
-			}
-		}
+		let speed = 2000;
+		let delay = 4000 * this.normal;
 
 		this.transformTween = new TWEEN.Tween( prop )
 			.to( to, speed )
 			.delay( delay )
-			.easing( TWEEN.Easing.Cubic.InOut )
-			.onUpdate( transformMethod )
+			.easing( TWEEN.Easing.Exponential.InOut )
+			.onUpdate( () => {
+				if( ! this.isFrameReady ) return;
+				this.el.setAttribute( property, prop );
+				this.isFrameReady = false;
+			} )
+			.onComplete( () => {
+				this.isFrameReady = false;
+				this.el.emit( 'step-complete' );
+			})
+			.start();
+	},
+
+	/**
+	 * onUpdate is called faster than the current frame rate
+	 * onUpdate is throttled with tick to prevent memory lockup
+	 */
+	animatePosition( to ){
+		let prop = new THREE.Vector3();
+		prop.copy( this.torusMesh.position );
+
+		let speed = 5000;
+		let delay = 0;
+
+		this.transformTween = new TWEEN.Tween( prop )
+			.to( to, speed )
+			.delay( delay )
+			.easing( TWEEN.Easing.Exponential.InOut )
+			.onUpdate( () => {
+				if( ! this.isFrameReady ) return;
+				this.torusMesh.position.copy( prop );
+				this.isFrameReady = false;
+			} )
 			.onComplete( () => {
 				this.isFrameReady = false;
 				this.el.emit( 'step-complete' );
@@ -209,7 +226,7 @@ AFRAME.registerComponent('layer', {
 		this.shiftTween = new TWEEN.Tween( proxy )
 			.to( { value: 20 }, 4000 )
 			.delay( 500*this.normal )
-			.easing( TWEEN.Easing.Cubic.InOut )
+			.easing( TWEEN.Easing.Exponential.InOut )
 			.onUpdate( normal => {
 				if( ! this.isFrameReady ) return;
 
@@ -230,18 +247,15 @@ AFRAME.registerComponent('layer', {
 	 * set colors of each torus
 	 * a, b refer to which of the 4 torus sides get colored
 	 */
-	updateFrontColors( color ) {
-		this.updateColors( 0, 2, color );
-	},
-	updateSideColors( color ) {
-		this.updateColors( 1, 3, color );
-	},
-	updateColors( a, b, color ) {
+
+	updateColors( colors ) {
 		let faces = this.geometry.faces;
 		let totalTicks = this.system.ticks*2;
 		for( let i = 0 ; i < (faces.length/4); i++){
-			faces[ i + totalTicks * a ].color.setHex( color );
-			faces[ i + totalTicks * b ].color.setHex( color );
+			faces[ i + totalTicks * 0 ].color.setHex( colors[0] );
+			faces[ i + totalTicks * 1 ].color.setHex( colors[1] );
+			faces[ i + totalTicks * 2 ].color.setHex( colors[2] );
+			faces[ i + totalTicks * 3 ].color.setHex( colors[3] );
 		}
 		this.geometry.elementsNeedUpdate = true;
 	},
