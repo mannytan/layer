@@ -32,14 +32,13 @@ AFRAME.registerComponent('layer', {
 		this.normal = this.data.seed / (this.system.total);
 		this.isFlipped = false;
 
-
 		this.distance = 0;
 		this.speed = 0.05;
 
 		this.x = 0;
 		this.y = 0;
 		this.z = 0;
-		this.isTickReady = true;
+		this.isFrameReady = true;
 
 		this.el.addEventListener( 'object3dset', event => {
 			this.system.registerMe(this.el);
@@ -59,6 +58,10 @@ AFRAME.registerComponent('layer', {
 
 		this.updateFrontColors( BLACK_COLOR );
 		this.updateSideColors( WHITE_COLOR );
+		this.el.addEventListener( 'object3dset', event => {
+			this.torusMesh = this.el.getObject3D( 'obj' );
+			// console.log( this.el.getObject3D( 'obj' ) );
+		} );
 		this.el.setObject3D('obj', new THREE.Mesh( this.geometry, this.material ));
 
 
@@ -148,21 +151,46 @@ AFRAME.registerComponent('layer', {
 	},
 
 
+	/**
+	 * transform animations [ 'position', 'scale', 'rotation' ]
+	 * onUpdate is called faster than the current frame rate
+	 * onUpdate is throttled with tick to prevent memory lockup
+	 */
 	animateTransform( property, to ){
-		let proxy = { value: 10 }
 
 		let prop = new THREE.Vector3();
-		prop.copy( this.el.getAttribute( property ) );
-		this.transformTween = new TWEEN.Tween( prop )
-			.to( to, 1000 )
-			.delay( 2000*this.normal )
-			.easing( TWEEN.Easing.Cubic.InOut )
-			.onUpdate( normal => {
-				if( ! this.isTickReady ) return;
+		if ( property === 'position' ) {
+			prop.copy( this.torusMesh.position );
+		} else {
+			prop.copy( this.el.getAttribute( property ) );
+		}
+
+		let speed = ( property === 'position') ? 3000 : 1000;
+		let delay = ( property === 'position') ? 0 : 2000 * this.normal;
+
+		let transformMethod;
+
+		if ( property === 'position' ) {
+			transformMethod = () => {
+				if( ! this.isFrameReady ) return;
+				this.torusMesh.position.copy( prop );
+				this.isFrameReady = false;
+			}
+		} else {
+			transformMethod = () => {
+				if( ! this.isFrameReady ) return;
 				this.el.setAttribute( property, prop );
-				this.isTickReady = false;
-			})
+				this.isFrameReady = false;
+			}
+		}
+
+		this.transformTween = new TWEEN.Tween( prop )
+			.to( to, speed )
+			.delay( delay )
+			.easing( TWEEN.Easing.Cubic.InOut )
+			.onUpdate( transformMethod )
 			.onComplete( () => {
+				this.isFrameReady = false;
 				this.el.emit( 'step-complete' );
 			})
 			.start();
@@ -170,6 +198,8 @@ AFRAME.registerComponent('layer', {
 
 	/**
 	 * vertices step order is shifted by 1
+	 * onUpdate is called faster than the current frame rate
+	 * onUpdate is throttled with tick to prevent memory lockup
 	 */
 	shiftVertices() {
 		this.isFlipped = !this.isFlipped;
@@ -181,10 +211,10 @@ AFRAME.registerComponent('layer', {
 			.delay( 500*this.normal )
 			.easing( TWEEN.Easing.Cubic.InOut )
 			.onUpdate( normal => {
-				if( ! this.isTickReady ) return;
+				if( ! this.isFrameReady ) return;
 
 				this.updateVertices( normal );
-				this.isTickReady = false;
+				this.isFrameReady = false;
 			})
 			.onComplete( () => {
 				this.el.emit( 'step-complete' );
@@ -193,22 +223,7 @@ AFRAME.registerComponent('layer', {
 	},
 
 	tick() {
-		this.isTickReady = true;
-		// if( this.shiftTween ) {
-		// 	// this.updateVertices( this.shiftAnimationNormal )
-		// }
-
-		// if( this.transformTween ) {
-		// 	this.el.setAttribute( this.transformAnimationProperty , this.transformAnimationTo );
-		// }
-
-		// console.log( this.el.id, 'tick')
-		// this.el.setAttribute('rotation', {
-		// 	z: this.z
-		// });
-		// this.distance += this.speed;
-		// // this.z = speed*(1-this.normal);
-		// this.z = this.distance + 90*(this.normal);
+		this.isFrameReady = true;
 	},
 
 	/**
@@ -230,6 +245,7 @@ AFRAME.registerComponent('layer', {
 		}
 		this.geometry.elementsNeedUpdate = true;
 	},
+
 	remove () {
 		this.system.unregisterMe(this.el);
 	}

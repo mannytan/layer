@@ -60,7 +60,8 @@ AFRAME.registerSystem( 'layer', {
 
 		// creates layer container
 		this.layerContainer = document.createElement( 'a-entity' );
-		this.layerContainer.setAttribute( 'position', { x: 0, y: 1.6, z: -6 } );
+		this.layerContainer.id = 'layerContainer';
+		this.layerContainer.setAttribute( 'position', { x: 0, y: 1.6, z: -4 } );
 		this.layerContainer.setAttribute( 'slow-rotate', { speed: 0.05 } );
 		this.scene.appendChild( this.layerContainer );
 
@@ -90,7 +91,7 @@ AFRAME.registerSystem( 'layer', {
 		});
 		proxyVertices.forEach( ( vertex, seed ) => {
 			// vertex.z += 0.1;
-			vertex.z *= ( vertex.y + 2 ) / ( max + 2 );
+			vertex.z *= ( vertex.y + 2 ) / ( max + 2 ) + 0.25;
 			// console.log(seed, vertex.y/max)
 		});
 		proxyGeometry.elementsNeedUpdate = true;
@@ -136,9 +137,6 @@ AFRAME.registerSystem( 'layer', {
 		el.removeAttribute( 'rotation' );
 		el.removeAttribute( 'position' );
 
-		// vertices[37].z += 3;
-		// el.getObject3D( 'obj' ).geometry.elementsNeedUpdate = true;
-
 	},
 
 	createProxyEntity( total, ticks ) {
@@ -155,6 +153,9 @@ AFRAME.registerSystem( 'layer', {
 	createLayerEntity( seed ) {
 		let el = document.createElement( 'a-entity' );
 		el.id = seed;
+		if ( seed % 2 === 0 ) {
+			el.setAttribute( 'visible', false );
+		}
 		el.setAttribute( 'layer', { seed: seed } );
 		this.layerContainer.appendChild( el );
 	},

@@ -27,10 +27,10 @@ AFRAME.registerComponent('slow-rotate', {
 
 	tick() {
 		this.el.setAttribute( 'rotation', {
-			x: this.x,
+			// x: this.x,
 			y: this.y,
 		} );
-		this.x += this.data.speed;
+		// this.x += this.data.speed;
 		this.y += this.data.speed;
 	}
 

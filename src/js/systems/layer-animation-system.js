@@ -64,7 +64,7 @@ AFRAME.registerSystem( 'layer-animation', {
 			// console.log( 'all-steps-complete' );
 			this.completeCount = 0;
 
-			if ( (this.toggleStyle++%2) === 0 ) {
+			if ( (this.toggleStyle++%4) === 0 ) {
 				this.shiftVertices();
 			} else {
 				this.animationId++;
@@ -87,7 +87,7 @@ AFRAME.registerSystem( 'layer-animation', {
 			} );
 		} );
 
-		this.animationId = 1;
+		this.animationId = 0;
 		this.completeCount = 0;
 		this.animations = this.createTransformList();
 		this.animateTransform( this.animations[ this.animationId ] );
@@ -115,6 +115,8 @@ AFRAME.registerSystem( 'layer-animation', {
 		for ( let i = 0; i < this.total; i++) {
 			el = this.entities[i];
 			normal = i / (this.total-1);
+			from.copy( params.to );
+			from.negate();
 			to = this.getTargetVector( from , params.to, normal, params.spread);
 			el.components['layer'].animateTransform( params.property, to );
 		}
@@ -130,23 +132,34 @@ AFRAME.registerSystem( 'layer-animation', {
 		vec.copy( to );
 		if( spread ) {
 			vec.sub(from);
+			// vec.multiplyScalar( this.easeInSine ( normal, 0, 1, 1 ) );
 			vec.multiplyScalar( normal );
 			vec.add(from);
 		}
 		return vec;
 	},
 
+	// t: current time, b: begInnIng value, c: change In value, d: duration
+	// easeInSine ( normal, 0, 1, 1 );
+	easeInSine( t, b, c, d ) {
+		return -c * Math.cos(t/d * (Math.PI/2)) + c + b;
+	},
+	easeOutSine( t, b, c, d ) {
+		return c * Math.sin(t/d * (Math.PI/2)) + b;
+	},
 	createTransformList() {
 		return [
 			// { property:'position', 	to: this.getRandomPosition(), 	spread: true },
 			{ property:'scale', 	to: { x: 1, y: 1, z: 1 }, 		spread: false },
-			{ property:'position', 	to: this.getRandomPosition(), 		spread: true },
 			{ property:'rotation', 	to: this.getRandomRotation(), 	spread: true },
-			{ property:'scale',	 	to: this.getRandomScale(), 		spread: false },
-			{ property:'position', 	to: { x: 0, y: 0, z: 0 }, 		spread: false },
+			{ property:'position', 	to: this.getRandomPosition(), 	spread: false },
+			{ property:'scale',	 	to: { x: 1, y: 1, z: 0.05 }, 	spread: false },
+			{ property:'position', 	to: { x: 0, y: 0, z: 1 }, 		spread: false },
+			{ property:'rotation', 	to: this.getRandomRotation(), 	spread: true },
+
+			{ property:'scale',	 	to: { x: 1, y: 1, z: 1 }, 		spread: false },
 			{ property:'rotation', 	to: { x: 0, y: 0, z: 0 }, 		spread: true },
 			{ property:'scale',	 	to: this.getRandomScale(), 		spread: false },
-			{ property:'scale', 	to: { x: 1, y: 1, z: 2 }, 		spread: false },
 			// { property:'rotation', 	to: this.getRandomRotation(), 	spread: this.randomBool() },
 
 			// // { property:'rotation', 	to: this.getRandomRotation(), 	spread: this.randomBool() },
@@ -163,9 +176,9 @@ AFRAME.registerSystem( 'layer-animation', {
 
 	getRandomPosition() {
 		return {
-			x: 0,
+			x: this.randomStep( 1, 4, 0.25 ),
 			y: 0,
-			z: this.randomStep( 3, 4, 0.5 )
+			z: 0 //this.randomStep( 4, 6, 0.5 )
 		};
 		return {
 			x: this.randomBool() ? 0 : this.randomStep( 0, 2, 0.25 ),
@@ -175,9 +188,9 @@ AFRAME.registerSystem( 'layer-animation', {
 	},
 	getRandomRotation() {
 		return {
-			x: 0,
-			y: 0,
-			z: this.randomStep( -180, 180, 10 )
+			x: this.randomStep( -90, 90, 10 ),
+			y: this.randomStep( -90, 90, 10 ),
+			z: 0
 		};
 		return {
 			x: this.randomStep( -90, 90, 45 ),
@@ -189,7 +202,7 @@ AFRAME.registerSystem( 'layer-animation', {
 		return {
 			x: 1,
 			y: 1,
-			z: this.randomStep( 0.1, 2, 0.1 ),
+			z: this.randomStep( 0.05, 0.5, 0.05 ),
 		};
 		return {
 			x: this.randomBool() ? 1 : this.randomStep( 0.25, 2, 0.25 ),
