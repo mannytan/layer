@@ -22,7 +22,7 @@ AFRAME.registerSystem( 'layer', {
 	},
 
 	init () {
-		console.log( 'layer-system', 'init' );
+		// console.log( 'layer-system', 'init' );
 		this.scene 	= this.el.sceneEl;
 
 		let layerData = this.scene.systems['layer-data'];
@@ -32,48 +32,39 @@ AFRAME.registerSystem( 'layer', {
 
 		this.isProxyReady = false;
 		this.areLayersReady = false;
+
+		this.proxyEl = document.querySelector( '#proxy' );
+		this.layerContainer = document.querySelector( '#layerContainer' );
+
 	},
 	update () {
-		console.log( 'layer-system', 'update' );
-		this.create3dObjects();
-	},
+		// console.log( 'layer-system', 'update' );
 
-	/**
-	 * Creates all objects dynamically
-	 */
-	create3dObjects: function () {
-		console.log( 'layer-system', 'create3dObjects' );
-
-		// creates and transforms proxy entity
-		this.proxyEl = document.createElement( 'a-entity' );
-		this.proxyEl.setAttribute( 'position', { x: 0, y: 0, z: 0 } );
-		this.proxyEl.setAttribute( 'scale', { x: -2, y: 2, z: 2 } );
-		this.proxyEl.setAttribute( 'rotation', { x: 90, y: 0, z: 0 } );
-		this.proxyEl.setAttribute( 'visible', false );
+		// transforms proxy entity
 		this.proxyEl.addEventListener( 'object3dset', event => {
 			this.isProxyReady = true;
 			this.tryMapVertices();
 		} );
-		let mesh = this.createProxyEntity( this.total, this.ticks );
-		this.proxyEl.setObject3D('obj', mesh );
-		this.scene.appendChild( this.proxyEl );
+		this.proxyEl.setObject3D('obj', this.createProxyEntity( this.total, this.ticks ) );
 
-		// creates layer container
-		this.layerContainer = document.createElement( 'a-entity' );
-		this.layerContainer.id = 'layerContainer';
-		this.layerContainer.setAttribute( 'position', { x: 0, y: 1.6, z: -4 } );
-		this.layerContainer.setAttribute( 'slow-rotate', { speed: 0.05 } );
-		this.scene.appendChild( this.layerContainer );
-
-		// creates layers
+		//
 		this.scene.addEventListener( 'layers3dset', event => {
 			this.bakeTransformsOnEntity( this.proxyEl );
 			this.morphSphereVertices();
 			this.areLayersReady = true;
 			this.tryMapVertices();
 		} );
+
+		this.addLayerComponents();
+	},
+
+	/**
+	 * Creates all objects dynamically
+	 */
+	addLayerComponents: function () {
 		for ( let i = 0; i < this.total; i++) {
-			this.createLayerEntity( i );
+			let el = document.querySelector( '#layer_' + i );
+			el.setAttribute( 'layer', { seed: i } );
 		}
 	},
 
@@ -122,8 +113,6 @@ AFRAME.registerSystem( 'layer', {
 	 * @param el
 	 */
 	bakeTransformsOnEntity( el ) {
-		console.log( 'layer-system', 'bakeTransformsOnEntity' );
-
 		let mesh = el.object3D;
 		mesh.updateMatrix();
 		mesh.updateMatrixWorld( true );
@@ -148,21 +137,6 @@ AFRAME.registerSystem( 'layer', {
 			wireframe: true
 		} );
 		return new THREE.Mesh( geometry, material );
-	},
-
-	createLayerEntity( seed ) {
-		let el = document.createElement( 'a-entity' );
-		el.id = seed;
-		if ( seed % 2 === 0 ) {
-			el.setAttribute( 'visible', false );
-		}
-		el.setAttribute( 'layer', { seed: seed } );
-		this.layerContainer.appendChild( el );
-	},
-
-	deleteLayerEntity( seed ) {
-		let el = this.entities[ seed ];
-		el.parentNode.removeChild( el );
 	},
 
 	registerMe: function ( el ) {

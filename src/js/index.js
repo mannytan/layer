@@ -23,6 +23,7 @@ require( './systems/layer-system' );
 require( './components/layer-component' );
 
 require( './systems/layer-animation-system' );
+require( './components/layer-animation-component' );
 
 
 

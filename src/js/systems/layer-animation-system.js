@@ -25,8 +25,7 @@ AFRAME.registerSystem( 'layer-animation', {
 	},
 
 	init () {
-		console.log( 'layer-animation-system', 'init' );
-
+		// console.log( 'layer-animation-system', 'init' );
 		this.randomInt = MathUtils.randomInt;
 		this.randomStep = MathUtils.randomStep;
 		this.randomColor = MathUtils.randomColor;
@@ -35,22 +34,33 @@ AFRAME.registerSystem( 'layer-animation', {
 		this.scene = this.el.sceneEl;
 		this.entities = null;
 		this.total = 0;
+	},
 
-		this.toggleStyle = 0;
-
+	update() {
+		// console.log( 'layer-animation-system', 'update' );
 		this.scene.addEventListener( 'layers-ready', event => {
-
 			let layerData = this.scene.systems['layer-data'];
 			this.entities = layerData.entities;
 			this.total = layerData.data.total;
 			this.ticks = layerData.data.ticks;
-
+			this.proxyEl = document.querySelector( '#proxy' );
+			this.addLayerAnimationComponents();
 			this.createAnimationManager();
 		});
+	},
 
+	/**
+	 * Creates all objects dynamically
+	 */
+	addLayerAnimationComponents: function () {
+		for ( let i = 0; i < this.total; i++) {
+			let el = document.querySelector( '#layer_' + i );
+			el.setAttribute( 'layer-animation', { seed: i } );
+		}
 	},
 
 	createAnimationManager() {
+		console.log( 'layer-animation-system', 'createAnimationManager' );
 		// event called when all transforms are done
 		this.el.addEventListener( 'all-list-transforms-complete', event => {	// console.log( 'all-list-transforms-complete' )
 			this.animationId = 0;
@@ -60,8 +70,7 @@ AFRAME.registerSystem( 'layer-animation', {
 		} );
 
 		// event called when all steps are done
-		this.el.addEventListener( 'all-steps-complete', event => {
-			// console.log( 'all-steps-complete' );
+		this.el.addEventListener( 'all-steps-complete', event => {				// console.log( 'all-steps-complete' );
 			this.completeCount = 0;
 
 			this.animationId++;
@@ -95,7 +104,7 @@ AFRAME.registerSystem( 'layer-animation', {
 	 * emits 'all-steps-complete' when all step animations have completed
 	 */
 	animateTransform( params ) {
-		// console.log( this.animationId + '/' + this.animations.length, params.property, params.to, params.spread );
+		console.log( this.animationId + '/' + this.animations.length, params.property, params.to, params.spread );
 
 		let normal;
 		let el;
@@ -108,7 +117,7 @@ AFRAME.registerSystem( 'layer-animation', {
 			from.copy( params.to );
 			from.negate();
 			to = this.getTargetVector( from , params.to, normal, params.spread );
-			el.components['layer'].animateTransform( params.property, to );
+			el.components['layer-animation'].animateTransform( params.property, to );
 		}
 	},
 

@@ -18,10 +18,8 @@ const BLACK_COLOR = 0x111111;
 const RED_COLOR = 0x333333;
 const WHITE_COLOR = 0xEEEEEE;
 
-import TWEEN from 'tween.js';
-
 AFRAME.registerComponent('layer', {
-	dependencies: [ 'layer-data' ],
+	// dependencies: [ 'layer-data' ],
 
 	schema: {
 		seed: {type: 'number', default: 0 },
@@ -31,14 +29,6 @@ AFRAME.registerComponent('layer', {
 		// console.log( 'layer-component', 'init', this.data.seed );
 		this.normal = this.data.seed / (this.system.total);
 		this.isFlipped = false;
-
-		this.distance = 0;
-		this.speed = 0.05;
-
-		this.x = 0;
-		this.y = 0;
-		this.z = 0;
-		this.isFrameReady = true;
 
 		this.el.addEventListener( 'object3dset', event => {
 			this.system.registerMe(this.el);
@@ -124,127 +114,6 @@ AFRAME.registerComponent('layer', {
 
 	},
 
-	updateVertices( normal ) {
-
-		let targetVertices = this.targetGeometry.vertices;
-		let vertices = this.geometry.vertices;
-		let total = vertices.length;
-		let vert = new THREE.Vector3();
-		for( let i = 0 ; i < total; i++){
-			vert.subVectors( this.targetGeometry.vertices[i], this.geometry.vertices[i] );
-			vert.multiplyScalar( normal );
-			vert.add( this.geometry.vertices[i] );
-			this.geometry.vertices[i].copy( vert );
-		}
-		this.geometry.verticesNeedUpdate = true;
-	},
-
-	/**
-	 * transform animations [ 'position', 'scale', 'rotation', 'shift' ]
-	 */
-	animateTransform( property, to ){
-		switch( property ) {
-			case 'scale':
-			case 'rotation':
-				this.animateProperty( property, to );
-				break;
-			case 'position':
-				this.animatePosition( to );
-				break;
-			case 'shift':
-				this.shiftVertices();
-				break;
-			default :
-				console.log( 'property', property );
-		}
-	},
-
-	/**
- 	 * onUpdate is called faster than the current frame rate
-	 * onUpdate is throttled with tick to prevent memory lockup
-	 */
-	animateProperty( property, to ){
-		let prop = new THREE.Vector3();
-		prop.copy( this.el.getAttribute( property ) );
-
-		let speed = 2000;
-		let delay = 4000 * this.normal;
-
-		this.transformTween = new TWEEN.Tween( prop )
-			.to( to, speed )
-			.delay( delay )
-			.easing( TWEEN.Easing.Exponential.InOut )
-			.onUpdate( () => {
-				if( ! this.isFrameReady ) return;
-				this.el.setAttribute( property, prop );
-				this.isFrameReady = false;
-			} )
-			.onComplete( () => {
-				this.isFrameReady = false;
-				this.el.emit( 'step-complete' );
-			})
-			.start();
-	},
-
-	/**
-	 * onUpdate is called faster than the current frame rate
-	 * onUpdate is throttled with tick to prevent memory lockup
-	 */
-	animatePosition( to ){
-		let prop = new THREE.Vector3();
-		prop.copy( this.torusMesh.position );
-
-		// let speed = 5000;
-		// let delay = 0;
-		let speed = 2000;
-		let delay = 4000 * this.normal;
-
-		this.transformTween = new TWEEN.Tween( prop )
-			.to( to, speed )
-			.delay( delay )
-			.easing( TWEEN.Easing.Exponential.InOut )
-			.onUpdate( () => {
-				if( ! this.isFrameReady ) return;
-				this.torusMesh.position.copy( prop );
-				this.isFrameReady = false;
-			} )
-			.onComplete( () => {
-				this.isFrameReady = false;
-				this.el.emit( 'step-complete' );
-			})
-			.start();
-	},
-
-	/**
-	 * vertices step order is shifted by 1
-	 * onUpdate is called faster than the current frame rate
-	 * onUpdate is throttled with tick to prevent memory lockup
-	 */
-	shiftVertices() {
-		this.isFlipped = !this.isFlipped;
-		this.mapVertices( this.targetGeometry );
-
-		let proxy = { value: 10 }
-		this.shiftTween = new TWEEN.Tween( proxy )
-			.to( { value: 20 }, 4000 )
-			.delay( 500*this.normal )
-			.easing( TWEEN.Easing.Exponential.InOut )
-			.onUpdate( normal => {
-				if( ! this.isFrameReady ) return;
-
-				this.updateVertices( normal );
-				this.isFrameReady = false;
-			})
-			.onComplete( () => {
-				this.el.emit( 'step-complete' );
-			})
-			.start();
-	},
-
-	tick() {
-		this.isFrameReady = true;
-	},
-
 	/**
 	 * set colors of each torus
 	 * a, b refer to which of the 4 torus sides get colored
@@ -266,9 +135,3 @@ AFRAME.registerComponent('layer', {
 		this.system.unregisterMe(this.el);
 	}
 });
-
-function tweenUpdate() {
-    requestAnimationFrame(tweenUpdate);
-    TWEEN.update();
-}
-tweenUpdate();
