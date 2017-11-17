@@ -9,7 +9,8 @@ boilerplate instructions below.
 
 ```
 npm install
-npm run start```
+npm run start
+```
 
 # license
 
