@@ -82629,6 +82629,1505 @@ module.exports = getWakeLock();
 
 }).call(this,typeof global !== "undefined" ? global : typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {})
 },{}],2:[function(require,module,exports){
+// shim for using process in browser
+var process = module.exports = {};
+
+// cached from whatever global is present so that test runners that stub it
+// don't break things.  But we need to wrap it in a try catch in case it is
+// wrapped in strict mode code which doesn't define any globals.  It's inside a
+// function because try/catches deoptimize in certain engines.
+
+var cachedSetTimeout;
+var cachedClearTimeout;
+
+function defaultSetTimout() {
+    throw new Error('setTimeout has not been defined');
+}
+function defaultClearTimeout () {
+    throw new Error('clearTimeout has not been defined');
+}
+(function () {
+    try {
+        if (typeof setTimeout === 'function') {
+            cachedSetTimeout = setTimeout;
+        } else {
+            cachedSetTimeout = defaultSetTimout;
+        }
+    } catch (e) {
+        cachedSetTimeout = defaultSetTimout;
+    }
+    try {
+        if (typeof clearTimeout === 'function') {
+            cachedClearTimeout = clearTimeout;
+        } else {
+            cachedClearTimeout = defaultClearTimeout;
+        }
+    } catch (e) {
+        cachedClearTimeout = defaultClearTimeout;
+    }
+} ())
+function runTimeout(fun) {
+    if (cachedSetTimeout === setTimeout) {
+        //normal enviroments in sane situations
+        return setTimeout(fun, 0);
+    }
+    // if setTimeout wasn't available but was latter defined
+    if ((cachedSetTimeout === defaultSetTimout || !cachedSetTimeout) && setTimeout) {
+        cachedSetTimeout = setTimeout;
+        return setTimeout(fun, 0);
+    }
+    try {
+        // when when somebody has screwed with setTimeout but no I.E. maddness
+        return cachedSetTimeout(fun, 0);
+    } catch(e){
+        try {
+            // When we are in I.E. but the script has been evaled so I.E. doesn't trust the global object when called normally
+            return cachedSetTimeout.call(null, fun, 0);
+        } catch(e){
+            // same as above but when it's a version of I.E. that must have the global object for 'this', hopfully our context correct otherwise it will throw a global error
+            return cachedSetTimeout.call(this, fun, 0);
+        }
+    }
+
+
+}
+function runClearTimeout(marker) {
+    if (cachedClearTimeout === clearTimeout) {
+        //normal enviroments in sane situations
+        return clearTimeout(marker);
+    }
+    // if clearTimeout wasn't available but was latter defined
+    if ((cachedClearTimeout === defaultClearTimeout || !cachedClearTimeout) && clearTimeout) {
+        cachedClearTimeout = clearTimeout;
+        return clearTimeout(marker);
+    }
+    try {
+        // when when somebody has screwed with setTimeout but no I.E. maddness
+        return cachedClearTimeout(marker);
+    } catch (e){
+        try {
+            // When we are in I.E. but the script has been evaled so I.E. doesn't  trust the global object when called normally
+            return cachedClearTimeout.call(null, marker);
+        } catch (e){
+            // same as above but when it's a version of I.E. that must have the global object for 'this', hopfully our context correct otherwise it will throw a global error.
+            // Some versions of I.E. have different rules for clearTimeout vs setTimeout
+            return cachedClearTimeout.call(this, marker);
+        }
+    }
+
+
+
+}
+var queue = [];
+var draining = false;
+var currentQueue;
+var queueIndex = -1;
+
+function cleanUpNextTick() {
+    if (!draining || !currentQueue) {
+        return;
+    }
+    draining = false;
+    if (currentQueue.length) {
+        queue = currentQueue.concat(queue);
+    } else {
+        queueIndex = -1;
+    }
+    if (queue.length) {
+        drainQueue();
+    }
+}
+
+function drainQueue() {
+    if (draining) {
+        return;
+    }
+    var timeout = runTimeout(cleanUpNextTick);
+    draining = true;
+
+    var len = queue.length;
+    while(len) {
+        currentQueue = queue;
+        queue = [];
+        while (++queueIndex < len) {
+            if (currentQueue) {
+                currentQueue[queueIndex].run();
+            }
+        }
+        queueIndex = -1;
+        len = queue.length;
+    }
+    currentQueue = null;
+    draining = false;
+    runClearTimeout(timeout);
+}
+
+process.nextTick = function (fun) {
+    var args = new Array(arguments.length - 1);
+    if (arguments.length > 1) {
+        for (var i = 1; i < arguments.length; i++) {
+            args[i - 1] = arguments[i];
+        }
+    }
+    queue.push(new Item(fun, args));
+    if (queue.length === 1 && !draining) {
+        runTimeout(drainQueue);
+    }
+};
+
+// v8 likes predictible objects
+function Item(fun, array) {
+    this.fun = fun;
+    this.array = array;
+}
+Item.prototype.run = function () {
+    this.fun.apply(null, this.array);
+};
+process.title = 'browser';
+process.browser = true;
+process.env = {};
+process.argv = [];
+process.version = ''; // empty string to avoid regexp issues
+process.versions = {};
+
+function noop() {}
+
+process.on = noop;
+process.addListener = noop;
+process.once = noop;
+process.off = noop;
+process.removeListener = noop;
+process.removeAllListeners = noop;
+process.emit = noop;
+process.prependListener = noop;
+process.prependOnceListener = noop;
+
+process.listeners = function (name) { return [] }
+
+process.binding = function (name) {
+    throw new Error('process.binding is not supported');
+};
+
+process.cwd = function () { return '/' };
+process.chdir = function (dir) {
+    throw new Error('process.chdir is not supported');
+};
+process.umask = function() { return 0; };
+
+},{}],3:[function(require,module,exports){
+(function (process){
+/**
+ * Tween.js - Licensed under the MIT license
+ * https://github.com/tweenjs/tween.js
+ * ----------------------------------------------
+ *
+ * See https://github.com/tweenjs/tween.js/graphs/contributors for the full list of contributors.
+ * Thank you all, you're awesome!
+ */
+
+var TWEEN = TWEEN || (function () {
+
+	var _tweens = [];
+
+	return {
+
+		getAll: function () {
+
+			return _tweens;
+
+		},
+
+		removeAll: function () {
+
+			_tweens = [];
+
+		},
+
+		add: function (tween) {
+
+			_tweens.push(tween);
+
+		},
+
+		remove: function (tween) {
+
+			var i = _tweens.indexOf(tween);
+
+			if (i !== -1) {
+				_tweens.splice(i, 1);
+			}
+
+		},
+
+		update: function (time, preserve) {
+
+			if (_tweens.length === 0) {
+				return false;
+			}
+
+			var i = 0;
+
+			time = time !== undefined ? time : TWEEN.now();
+
+			while (i < _tweens.length) {
+
+				if (_tweens[i].update(time) || preserve) {
+					i++;
+				} else {
+					_tweens.splice(i, 1);
+				}
+
+			}
+
+			return true;
+
+		}
+	};
+
+})();
+
+
+// Include a performance.now polyfill.
+// In node.js, use process.hrtime.
+if (typeof (window) === 'undefined' && typeof (process) !== 'undefined') {
+	TWEEN.now = function () {
+		var time = process.hrtime();
+
+		// Convert [seconds, nanoseconds] to milliseconds.
+		return time[0] * 1000 + time[1] / 1000000;
+	};
+}
+// In a browser, use window.performance.now if it is available.
+else if (typeof (window) !== 'undefined' &&
+         window.performance !== undefined &&
+		 window.performance.now !== undefined) {
+	// This must be bound, because directly assigning this function
+	// leads to an invocation exception in Chrome.
+	TWEEN.now = window.performance.now.bind(window.performance);
+}
+// Use Date.now if it is available.
+else if (Date.now !== undefined) {
+	TWEEN.now = Date.now;
+}
+// Otherwise, use 'new Date().getTime()'.
+else {
+	TWEEN.now = function () {
+		return new Date().getTime();
+	};
+}
+
+
+TWEEN.Tween = function (object) {
+
+	var _object = object;
+	var _valuesStart = {};
+	var _valuesEnd = {};
+	var _valuesStartRepeat = {};
+	var _duration = 1000;
+	var _repeat = 0;
+	var _repeatDelayTime;
+	var _yoyo = false;
+	var _isPlaying = false;
+	var _reversed = false;
+	var _delayTime = 0;
+	var _startTime = null;
+	var _easingFunction = TWEEN.Easing.Linear.None;
+	var _interpolationFunction = TWEEN.Interpolation.Linear;
+	var _chainedTweens = [];
+	var _onStartCallback = null;
+	var _onStartCallbackFired = false;
+	var _onUpdateCallback = null;
+	var _onCompleteCallback = null;
+	var _onStopCallback = null;
+
+	this.to = function (properties, duration) {
+
+		_valuesEnd = properties;
+
+		if (duration !== undefined) {
+			_duration = duration;
+		}
+
+		return this;
+
+	};
+
+	this.start = function (time) {
+
+		TWEEN.add(this);
+
+		_isPlaying = true;
+
+		_onStartCallbackFired = false;
+
+		_startTime = time !== undefined ? time : TWEEN.now();
+		_startTime += _delayTime;
+
+		for (var property in _valuesEnd) {
+
+			// Check if an Array was provided as property value
+			if (_valuesEnd[property] instanceof Array) {
+
+				if (_valuesEnd[property].length === 0) {
+					continue;
+				}
+
+				// Create a local copy of the Array with the start value at the front
+				_valuesEnd[property] = [_object[property]].concat(_valuesEnd[property]);
+
+			}
+
+			// If `to()` specifies a property that doesn't exist in the source object,
+			// we should not set that property in the object
+			if (_object[property] === undefined) {
+				continue;
+			}
+
+			// Save the starting value.
+			_valuesStart[property] = _object[property];
+
+			if ((_valuesStart[property] instanceof Array) === false) {
+				_valuesStart[property] *= 1.0; // Ensures we're using numbers, not strings
+			}
+
+			_valuesStartRepeat[property] = _valuesStart[property] || 0;
+
+		}
+
+		return this;
+
+	};
+
+	this.stop = function () {
+
+		if (!_isPlaying) {
+			return this;
+		}
+
+		TWEEN.remove(this);
+		_isPlaying = false;
+
+		if (_onStopCallback !== null) {
+			_onStopCallback.call(_object, _object);
+		}
+
+		this.stopChainedTweens();
+		return this;
+
+	};
+
+	this.end = function () {
+
+		this.update(_startTime + _duration);
+		return this;
+
+	};
+
+	this.stopChainedTweens = function () {
+
+		for (var i = 0, numChainedTweens = _chainedTweens.length; i < numChainedTweens; i++) {
+			_chainedTweens[i].stop();
+		}
+
+	};
+
+	this.delay = function (amount) {
+
+		_delayTime = amount;
+		return this;
+
+	};
+
+	this.repeat = function (times) {
+
+		_repeat = times;
+		return this;
+
+	};
+
+	this.repeatDelay = function (amount) {
+
+		_repeatDelayTime = amount;
+		return this;
+
+	};
+
+	this.yoyo = function (yoyo) {
+
+		_yoyo = yoyo;
+		return this;
+
+	};
+
+
+	this.easing = function (easing) {
+
+		_easingFunction = easing;
+		return this;
+
+	};
+
+	this.interpolation = function (interpolation) {
+
+		_interpolationFunction = interpolation;
+		return this;
+
+	};
+
+	this.chain = function () {
+
+		_chainedTweens = arguments;
+		return this;
+
+	};
+
+	this.onStart = function (callback) {
+
+		_onStartCallback = callback;
+		return this;
+
+	};
+
+	this.onUpdate = function (callback) {
+
+		_onUpdateCallback = callback;
+		return this;
+
+	};
+
+	this.onComplete = function (callback) {
+
+		_onCompleteCallback = callback;
+		return this;
+
+	};
+
+	this.onStop = function (callback) {
+
+		_onStopCallback = callback;
+		return this;
+
+	};
+
+	this.update = function (time) {
+
+		var property;
+		var elapsed;
+		var value;
+
+		if (time < _startTime) {
+			return true;
+		}
+
+		if (_onStartCallbackFired === false) {
+
+			if (_onStartCallback !== null) {
+				_onStartCallback.call(_object, _object);
+			}
+
+			_onStartCallbackFired = true;
+		}
+
+		elapsed = (time - _startTime) / _duration;
+		elapsed = elapsed > 1 ? 1 : elapsed;
+
+		value = _easingFunction(elapsed);
+
+		for (property in _valuesEnd) {
+
+			// Don't update properties that do not exist in the source object
+			if (_valuesStart[property] === undefined) {
+				continue;
+			}
+
+			var start = _valuesStart[property] || 0;
+			var end = _valuesEnd[property];
+
+			if (end instanceof Array) {
+
+				_object[property] = _interpolationFunction(end, value);
+
+			} else {
+
+				// Parses relative end values with start as base (e.g.: +10, -3)
+				if (typeof (end) === 'string') {
+
+					if (end.charAt(0) === '+' || end.charAt(0) === '-') {
+						end = start + parseFloat(end);
+					} else {
+						end = parseFloat(end);
+					}
+				}
+
+				// Protect against non numeric properties.
+				if (typeof (end) === 'number') {
+					_object[property] = start + (end - start) * value;
+				}
+
+			}
+
+		}
+
+		if (_onUpdateCallback !== null) {
+			_onUpdateCallback.call(_object, value);
+		}
+
+		if (elapsed === 1) {
+
+			if (_repeat > 0) {
+
+				if (isFinite(_repeat)) {
+					_repeat--;
+				}
+
+				// Reassign starting values, restart by making startTime = now
+				for (property in _valuesStartRepeat) {
+
+					if (typeof (_valuesEnd[property]) === 'string') {
+						_valuesStartRepeat[property] = _valuesStartRepeat[property] + parseFloat(_valuesEnd[property]);
+					}
+
+					if (_yoyo) {
+						var tmp = _valuesStartRepeat[property];
+
+						_valuesStartRepeat[property] = _valuesEnd[property];
+						_valuesEnd[property] = tmp;
+					}
+
+					_valuesStart[property] = _valuesStartRepeat[property];
+
+				}
+
+				if (_yoyo) {
+					_reversed = !_reversed;
+				}
+
+				if (_repeatDelayTime !== undefined) {
+					_startTime = time + _repeatDelayTime;
+				} else {
+					_startTime = time + _delayTime;
+				}
+
+				return true;
+
+			} else {
+
+				if (_onCompleteCallback !== null) {
+
+					_onCompleteCallback.call(_object, _object);
+				}
+
+				for (var i = 0, numChainedTweens = _chainedTweens.length; i < numChainedTweens; i++) {
+					// Make the chained tweens start exactly at the time they should,
+					// even if the `update()` method was called way past the duration of the tween
+					_chainedTweens[i].start(_startTime + _duration);
+				}
+
+				return false;
+
+			}
+
+		}
+
+		return true;
+
+	};
+
+};
+
+
+TWEEN.Easing = {
+
+	Linear: {
+
+		None: function (k) {
+
+			return k;
+
+		}
+
+	},
+
+	Quadratic: {
+
+		In: function (k) {
+
+			return k * k;
+
+		},
+
+		Out: function (k) {
+
+			return k * (2 - k);
+
+		},
+
+		InOut: function (k) {
+
+			if ((k *= 2) < 1) {
+				return 0.5 * k * k;
+			}
+
+			return - 0.5 * (--k * (k - 2) - 1);
+
+		}
+
+	},
+
+	Cubic: {
+
+		In: function (k) {
+
+			return k * k * k;
+
+		},
+
+		Out: function (k) {
+
+			return --k * k * k + 1;
+
+		},
+
+		InOut: function (k) {
+
+			if ((k *= 2) < 1) {
+				return 0.5 * k * k * k;
+			}
+
+			return 0.5 * ((k -= 2) * k * k + 2);
+
+		}
+
+	},
+
+	Quartic: {
+
+		In: function (k) {
+
+			return k * k * k * k;
+
+		},
+
+		Out: function (k) {
+
+			return 1 - (--k * k * k * k);
+
+		},
+
+		InOut: function (k) {
+
+			if ((k *= 2) < 1) {
+				return 0.5 * k * k * k * k;
+			}
+
+			return - 0.5 * ((k -= 2) * k * k * k - 2);
+
+		}
+
+	},
+
+	Quintic: {
+
+		In: function (k) {
+
+			return k * k * k * k * k;
+
+		},
+
+		Out: function (k) {
+
+			return --k * k * k * k * k + 1;
+
+		},
+
+		InOut: function (k) {
+
+			if ((k *= 2) < 1) {
+				return 0.5 * k * k * k * k * k;
+			}
+
+			return 0.5 * ((k -= 2) * k * k * k * k + 2);
+
+		}
+
+	},
+
+	Sinusoidal: {
+
+		In: function (k) {
+
+			return 1 - Math.cos(k * Math.PI / 2);
+
+		},
+
+		Out: function (k) {
+
+			return Math.sin(k * Math.PI / 2);
+
+		},
+
+		InOut: function (k) {
+
+			return 0.5 * (1 - Math.cos(Math.PI * k));
+
+		}
+
+	},
+
+	Exponential: {
+
+		In: function (k) {
+
+			return k === 0 ? 0 : Math.pow(1024, k - 1);
+
+		},
+
+		Out: function (k) {
+
+			return k === 1 ? 1 : 1 - Math.pow(2, - 10 * k);
+
+		},
+
+		InOut: function (k) {
+
+			if (k === 0) {
+				return 0;
+			}
+
+			if (k === 1) {
+				return 1;
+			}
+
+			if ((k *= 2) < 1) {
+				return 0.5 * Math.pow(1024, k - 1);
+			}
+
+			return 0.5 * (- Math.pow(2, - 10 * (k - 1)) + 2);
+
+		}
+
+	},
+
+	Circular: {
+
+		In: function (k) {
+
+			return 1 - Math.sqrt(1 - k * k);
+
+		},
+
+		Out: function (k) {
+
+			return Math.sqrt(1 - (--k * k));
+
+		},
+
+		InOut: function (k) {
+
+			if ((k *= 2) < 1) {
+				return - 0.5 * (Math.sqrt(1 - k * k) - 1);
+			}
+
+			return 0.5 * (Math.sqrt(1 - (k -= 2) * k) + 1);
+
+		}
+
+	},
+
+	Elastic: {
+
+		In: function (k) {
+
+			if (k === 0) {
+				return 0;
+			}
+
+			if (k === 1) {
+				return 1;
+			}
+
+			return -Math.pow(2, 10 * (k - 1)) * Math.sin((k - 1.1) * 5 * Math.PI);
+
+		},
+
+		Out: function (k) {
+
+			if (k === 0) {
+				return 0;
+			}
+
+			if (k === 1) {
+				return 1;
+			}
+
+			return Math.pow(2, -10 * k) * Math.sin((k - 0.1) * 5 * Math.PI) + 1;
+
+		},
+
+		InOut: function (k) {
+
+			if (k === 0) {
+				return 0;
+			}
+
+			if (k === 1) {
+				return 1;
+			}
+
+			k *= 2;
+
+			if (k < 1) {
+				return -0.5 * Math.pow(2, 10 * (k - 1)) * Math.sin((k - 1.1) * 5 * Math.PI);
+			}
+
+			return 0.5 * Math.pow(2, -10 * (k - 1)) * Math.sin((k - 1.1) * 5 * Math.PI) + 1;
+
+		}
+
+	},
+
+	Back: {
+
+		In: function (k) {
+
+			var s = 1.70158;
+
+			return k * k * ((s + 1) * k - s);
+
+		},
+
+		Out: function (k) {
+
+			var s = 1.70158;
+
+			return --k * k * ((s + 1) * k + s) + 1;
+
+		},
+
+		InOut: function (k) {
+
+			var s = 1.70158 * 1.525;
+
+			if ((k *= 2) < 1) {
+				return 0.5 * (k * k * ((s + 1) * k - s));
+			}
+
+			return 0.5 * ((k -= 2) * k * ((s + 1) * k + s) + 2);
+
+		}
+
+	},
+
+	Bounce: {
+
+		In: function (k) {
+
+			return 1 - TWEEN.Easing.Bounce.Out(1 - k);
+
+		},
+
+		Out: function (k) {
+
+			if (k < (1 / 2.75)) {
+				return 7.5625 * k * k;
+			} else if (k < (2 / 2.75)) {
+				return 7.5625 * (k -= (1.5 / 2.75)) * k + 0.75;
+			} else if (k < (2.5 / 2.75)) {
+				return 7.5625 * (k -= (2.25 / 2.75)) * k + 0.9375;
+			} else {
+				return 7.5625 * (k -= (2.625 / 2.75)) * k + 0.984375;
+			}
+
+		},
+
+		InOut: function (k) {
+
+			if (k < 0.5) {
+				return TWEEN.Easing.Bounce.In(k * 2) * 0.5;
+			}
+
+			return TWEEN.Easing.Bounce.Out(k * 2 - 1) * 0.5 + 0.5;
+
+		}
+
+	}
+
+};
+
+TWEEN.Interpolation = {
+
+	Linear: function (v, k) {
+
+		var m = v.length - 1;
+		var f = m * k;
+		var i = Math.floor(f);
+		var fn = TWEEN.Interpolation.Utils.Linear;
+
+		if (k < 0) {
+			return fn(v[0], v[1], f);
+		}
+
+		if (k > 1) {
+			return fn(v[m], v[m - 1], m - f);
+		}
+
+		return fn(v[i], v[i + 1 > m ? m : i + 1], f - i);
+
+	},
+
+	Bezier: function (v, k) {
+
+		var b = 0;
+		var n = v.length - 1;
+		var pw = Math.pow;
+		var bn = TWEEN.Interpolation.Utils.Bernstein;
+
+		for (var i = 0; i <= n; i++) {
+			b += pw(1 - k, n - i) * pw(k, i) * v[i] * bn(n, i);
+		}
+
+		return b;
+
+	},
+
+	CatmullRom: function (v, k) {
+
+		var m = v.length - 1;
+		var f = m * k;
+		var i = Math.floor(f);
+		var fn = TWEEN.Interpolation.Utils.CatmullRom;
+
+		if (v[0] === v[m]) {
+
+			if (k < 0) {
+				i = Math.floor(f = m * (1 + k));
+			}
+
+			return fn(v[(i - 1 + m) % m], v[i], v[(i + 1) % m], v[(i + 2) % m], f - i);
+
+		} else {
+
+			if (k < 0) {
+				return v[0] - (fn(v[0], v[0], v[1], v[1], -f) - v[0]);
+			}
+
+			if (k > 1) {
+				return v[m] - (fn(v[m], v[m], v[m - 1], v[m - 1], f - m) - v[m]);
+			}
+
+			return fn(v[i ? i - 1 : 0], v[i], v[m < i + 1 ? m : i + 1], v[m < i + 2 ? m : i + 2], f - i);
+
+		}
+
+	},
+
+	Utils: {
+
+		Linear: function (p0, p1, t) {
+
+			return (p1 - p0) * t + p0;
+
+		},
+
+		Bernstein: function (n, i) {
+
+			var fc = TWEEN.Interpolation.Utils.Factorial;
+
+			return fc(n) / fc(i) / fc(n - i);
+
+		},
+
+		Factorial: (function () {
+
+			var a = [1];
+
+			return function (n) {
+
+				var s = 1;
+
+				if (a[n]) {
+					return a[n];
+				}
+
+				for (var i = n; i > 1; i--) {
+					s *= i;
+				}
+
+				a[n] = s;
+				return s;
+
+			};
+
+		})(),
+
+		CatmullRom: function (p0, p1, p2, p3, t) {
+
+			var v0 = (p2 - p0) * 0.5;
+			var v1 = (p3 - p1) * 0.5;
+			var t2 = t * t;
+			var t3 = t * t2;
+
+			return (2 * p1 - 2 * p2 + v0 + v1) * t3 + (- 3 * p1 + 3 * p2 - 2 * v0 - v1) * t2 + v0 * t + p1;
+
+		}
+
+	}
+
+};
+
+// UMD (Universal Module Definition)
+(function (root) {
+
+	if (typeof define === 'function' && define.amd) {
+
+		// AMD
+		define([], function () {
+			return TWEEN;
+		});
+
+	} else if (typeof module !== 'undefined' && typeof exports === 'object') {
+
+		// Node.js
+		module.exports = TWEEN;
+
+	} else if (root !== undefined) {
+
+		// Global variable
+		root.TWEEN = TWEEN;
+
+	}
+
+})(this);
+
+}).call(this,require('_process'))
+},{"_process":2}],4:[function(require,module,exports){
+'use strict';
+
+/**
+ * Copyright 2017 Manny Tan
+ *
+ * Licensed under the Apache License, Version 2.0 (the 'License');
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an 'AS IS' BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+AFRAME.registerComponent('background-color', {
+  schema: {
+    color: { type: 'color' }
+  },
+
+  update: function update() {
+    this.el.sceneEl.renderer.setClearColor(this.data.color);
+  }
+
+});
+
+},{}],5:[function(require,module,exports){
+'use strict';
+
+var _tween = require('tween.js');
+
+var _tween2 = _interopRequireDefault(_tween);
+
+function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
+
+AFRAME.registerComponent('layer-animation', {
+	// dependencies: [ 'layer-data' ],
+
+	schema: {
+		seed: { type: 'number', default: 0 }
+	},
+
+	init: function init() {
+		// console.log( 'layer-animation-component', 'init', this.data.seed );
+		this.normal = this.data.seed / this.system.total;
+		this.isFlipped = false;
+
+		this.speed = 4000;
+		this.delay = 2000;
+
+		this.isFrameReady = true;
+
+		// object3dset is not reaquired because data is pulled from layer component
+		this.geometry = this.el.components['layer'].geometry;
+		this.targetGeometry = this.geometry.clone();
+		this.torusMesh = this.el.getObject3D('obj');
+	},
+
+
+	/**
+  * creates order of torus geometry vertices
+  * based on sphere geometry's step order
+  * below is an example of 3 step order
+ 	 * cross section of a single sphere tick	* winding order rectangle defined by sphere
+  * 0 ------- 6  <- inner most id			* [ 0, 1, 5, 6 ]
+  *  1 ----- 5								* [ 1, 2, 4, 5 ]
+  *   2 -- 4									* [ 2, 3, 3, 4 ]
+  * 	   33  <- outer most id
+  */
+	getStepOrder: function getStepOrder() {
+		var doubled = this.system.total * 2;
+		var stepOrder = [this.data.seed + 0, this.data.seed + 1, doubled - this.data.seed - 1, doubled - this.data.seed - 0];
+
+		if (this.isFlipped) {
+			var first = stepOrder.shift();
+			stepOrder.push(first);
+		}
+
+		return stepOrder;
+	},
+
+
+	/**
+  * takes toruses/tori geometry and remaps vertices based on sphere geometry
+  */
+	mapVertices: function mapVertices(geometry) {
+		var _this = this;
+
+		var proxyGeometry = this.system.proxyEl.getObject3D('obj').geometry;
+		var proxyVertices = proxyGeometry.vertices;
+
+		var firstProxyVertex = 0;
+		var lastProxyVertex = proxyVertices.length - 1;
+		var doubled = this.system.total * 2;
+
+		var vertices = geometry.vertices;
+		var stepOrder = this.getStepOrder();
+
+		vertices.forEach(function (vertex, id) {
+			var tick = parseInt(id / _this.system.ticks);
+			var seed = 1; // offset for first sphere vertice
+			seed += id % _this.system.ticks; // actual tick position
+			seed += _this.system.ticks * (stepOrder[tick] - 1); // ticks step order
+
+			// account for innermost vertices
+			seed = stepOrder[tick] === 0 ? firstProxyVertex : seed; // center vertice
+			seed = stepOrder[tick] === doubled ? lastProxyVertex : seed;
+
+			vertex.copy(proxyVertices[seed]);
+		});
+		geometry.verticesNeedUpdate = true;
+	},
+	updateVertices: function updateVertices(normal) {
+
+		var targetVertices = this.targetGeometry.vertices;
+		var vertices = this.geometry.vertices;
+		var total = vertices.length;
+		var vert = new THREE.Vector3();
+		for (var i = 0; i < total; i++) {
+			vert.subVectors(this.targetGeometry.vertices[i], this.geometry.vertices[i]);
+			vert.multiplyScalar(normal);
+			vert.add(this.geometry.vertices[i]);
+			this.geometry.vertices[i].copy(vert);
+		}
+		this.geometry.verticesNeedUpdate = true;
+	},
+
+
+	/**
+  * transform animations [ 'position', 'scale', 'rotation', 'shift' ]
+  */
+	animateTransform: function animateTransform(property, to) {
+		switch (property) {
+			case 'scale':
+			case 'rotation':
+				this.animateProperty(property, to);
+				break;
+			case 'position':
+				this.animatePosition(to);
+				break;
+			case 'shift':
+				this.shiftVertices();
+				break;
+			default:
+				console.log('property', property);
+		}
+	},
+
+
+	/**
+ 	 * onUpdate is called faster than the current frame rate
+  * onUpdate is throttled with tick to prevent memory lockup
+  */
+	animateProperty: function animateProperty(property, to) {
+		var _this2 = this;
+
+		var prop = new THREE.Vector3();
+		prop.copy(this.el.getAttribute(property));
+
+		var speed = this.speed;
+		var delay = this.delay * this.normal;
+
+		this.transformTween = new _tween2.default.Tween(prop).to(to, speed).delay(delay).easing(_tween2.default.Easing.Exponential.InOut).onUpdate(function () {
+			if (!_this2.isFrameReady) return;
+			_this2.el.setAttribute(property, prop);
+			_this2.isFrameReady = false;
+		}).onComplete(function () {
+			_this2.isFrameReady = false;
+			_this2.el.emit('step-complete');
+		}).start();
+	},
+
+
+	/**
+  * onUpdate is called faster than the current frame rate
+  * onUpdate is throttled with tick to prevent memory lockup
+  */
+	animatePosition: function animatePosition(to) {
+		var _this3 = this;
+
+		var prop = new THREE.Vector3();
+		prop.copy(this.torusMesh.position);
+
+		var speed = this.speed;
+		var delay = this.delay * this.normal;
+
+		this.transformTween = new _tween2.default.Tween(prop).to(to, speed).delay(delay).easing(_tween2.default.Easing.Exponential.InOut).onUpdate(function () {
+			if (!_this3.isFrameReady) return;
+			_this3.torusMesh.position.copy(prop);
+			_this3.isFrameReady = false;
+		}).onComplete(function () {
+			_this3.isFrameReady = false;
+			_this3.el.emit('step-complete');
+		}).start();
+	},
+
+
+	/**
+  * vertices step order is shifted by 1
+  * onUpdate is called faster than the current frame rate
+  * onUpdate is throttled with tick to prevent memory lockup
+  */
+	shiftVertices: function shiftVertices() {
+		var _this4 = this;
+
+		this.isFlipped = !this.isFlipped;
+		this.mapVertices(this.targetGeometry);
+
+		var speed = this.speed;
+		var delay = this.delay * this.normal;
+		var proxy = { value: 0 };
+
+		this.shiftTween = new _tween2.default.Tween(proxy).to({ value: 1 }, speed).delay(delay).easing(_tween2.default.Easing.Exponential.InOut).onUpdate(function () {
+			if (!_this4.isFrameReady) return;
+
+			_this4.updateVertices(proxy.value);
+			_this4.isFrameReady = false;
+		}).onComplete(function () {
+			_this4.el.emit('step-complete');
+		}).start();
+	},
+	tick: function tick() {
+		this.isFrameReady = true;
+	}
+}); /**
+     * Copyright 2017 Manny Tan
+     *
+     * Licensed under the Apache License, Version 2.0 (the 'License');
+     * you may not use this file except in compliance with the License.
+     * You may obtain a copy of the License at
+     *
+     *     http://www.apache.org/licenses/LICENSE-2.0
+     *
+     * Unless required by applicable law or agreed to in writing, software
+     * distributed under the License is distributed on an 'AS IS' BASIS,
+     * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+     * See the License for the specific language governing permissions and
+     * limitations under the License.
+     */
+
+function tweenUpdate() {
+	requestAnimationFrame(tweenUpdate);
+	_tween2.default.update();
+}
+tweenUpdate();
+
+},{"tween.js":3}],6:[function(require,module,exports){
+'use strict';
+
+/**
+ * Copyright 2017 Manny Tan
+ *
+ * Licensed under the Apache License, Version 2.0 (the 'License');
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an 'AS IS' BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+var BLACK_COLOR = 0x111111;
+var RED_COLOR = 0x333333;
+var WHITE_COLOR = 0xEEEEEE;
+
+AFRAME.registerComponent('layer', {
+	// dependencies: [ 'layer-data' ],
+
+	schema: {
+		seed: { type: 'number', default: 0 }
+	},
+
+	init: function init() {
+		var _this = this;
+
+		// console.log( 'layer-component', 'init', this.data.seed );
+		this.normal = this.data.seed / this.system.total;
+		this.isFlipped = false;
+
+		this.el.addEventListener('object3dset', function (event) {
+			_this.system.registerMe(_this.el);
+		});
+
+		// transparent:true,
+		// blending: THREE.NormalBlending
+		// NoBlending, NormalBlending, AdditiveBlending, SubtractiveBlending, MultiplyBlending,
+		this.geometry = new THREE.TorusGeometry(0.5, 0.25, 4, this.system.ticks);
+		this.targetGeometry = this.geometry.clone();
+		this.material = new THREE.MeshBasicMaterial({
+			color: 0xFFFFFF,
+			flatShading: true,
+			wireframe: false,
+			vertexColors: THREE.FaceColors
+		});
+
+		this.updateColors([BLACK_COLOR, BLACK_COLOR, RED_COLOR, WHITE_COLOR]);
+
+		this.el.addEventListener('object3dset', function (event) {
+			_this.torusMesh = _this.el.getObject3D('obj');
+		});
+		this.el.setObject3D('obj', new THREE.Mesh(this.geometry, this.material));
+	},
+
+
+	/**
+  * creates order of torus geometry vertices
+  * based on sphere geometry's step order
+  * below is an example of 3 step order
+ 	 * cross section of a single sphere tick	* winding order rectangle defined by sphere
+  * 0 ------- 6  <- inner most id			* [ 0, 1, 5, 6 ]
+  *  1 ----- 5								* [ 1, 2, 4, 5 ]
+  *   2 -- 4									* [ 2, 3, 3, 4 ]
+  * 	   33  <- outer most id
+  */
+	getStepOrder: function getStepOrder() {
+		var doubled = this.system.total * 2;
+		var stepOrder = [this.data.seed + 0, this.data.seed + 1, doubled - this.data.seed - 1, doubled - this.data.seed - 0];
+
+		if (this.isFlipped) {
+			var first = stepOrder.shift();
+			stepOrder.push(first);
+		}
+
+		return stepOrder;
+	},
+
+
+	/**
+  * takes toruses/tori geometry and remaps vertices based on sphere geometry
+  */
+	mapVertices: function mapVertices(geometry) {
+		var _this2 = this;
+
+		var proxyGeometry = this.system.proxyEl.getObject3D('obj').geometry;
+		var proxyVertices = proxyGeometry.vertices;
+
+		var firstProxyVertex = 0;
+		var lastProxyVertex = proxyVertices.length - 1;
+		var doubled = this.system.total * 2;
+
+		var vertices = geometry.vertices;
+		var stepOrder = this.getStepOrder();
+
+		vertices.forEach(function (vertex, id) {
+			var tick = parseInt(id / _this2.system.ticks);
+			var seed = 1; // offset for first sphere vertice
+			seed += id % _this2.system.ticks; // actual tick position
+			seed += _this2.system.ticks * (stepOrder[tick] - 1); // ticks step order
+
+			// account for innermost vertices
+			seed = stepOrder[tick] === 0 ? firstProxyVertex : seed; // center vertice
+			seed = stepOrder[tick] === doubled ? lastProxyVertex : seed;
+
+			vertex.copy(proxyVertices[seed]);
+		});
+		geometry.verticesNeedUpdate = true;
+	},
+
+
+	/**
+  * set colors of each torus
+  * a, b refer to which of the 4 torus sides get colored
+  */
+
+	updateColors: function updateColors(colors) {
+		var faces = this.geometry.faces;
+		var totalTicks = this.system.ticks * 2;
+		for (var i = 0; i < faces.length / 4; i++) {
+			faces[i + totalTicks * 0].color.setHex(colors[0]);
+			faces[i + totalTicks * 1].color.setHex(colors[1]);
+			faces[i + totalTicks * 2].color.setHex(colors[2]);
+			faces[i + totalTicks * 3].color.setHex(colors[3]);
+		}
+		this.geometry.elementsNeedUpdate = true;
+	},
+	remove: function remove() {
+		this.system.unregisterMe(this.el);
+	}
+});
+
+},{}],7:[function(require,module,exports){
+'use strict';
+
+/**
+ * Copyright 2017 Manny Tan
+ *
+ * Licensed under the Apache License, Version 2.0 (the 'License');
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an 'AS IS' BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+AFRAME.registerComponent('slow-rotate', {
+	schema: {
+		speed: { type: 'number', default: 1 },
+		axis: { type: 'string', default: 'Y' }
+	},
+
+	init: function init() {
+		this.x = 0;
+		this.y = 0;
+	},
+	tick: function tick() {
+		this.el.setAttribute('rotation', {
+			// x: this.x,
+			y: this.y
+		});
+		// this.x += this.data.speed;
+		this.y += this.data.speed;
+	}
+});
+
+},{}],8:[function(require,module,exports){
 'use strict';
 
 /**
@@ -82648,16 +84147,587 @@ module.exports = getWakeLock();
  */
 
 require('aframe');
-// require( './systems/layer-data-system' );
-//
-//
-// require( './systems/layer-system' );
-// require( './components/layer-component' );
-//
-// require( './systems/layer-animation-system' );
-//
-//
-//
-// require( './components/slow-rotate-component' );
+require('./components/background-color');
+require('./systems/layer-data-system');
 
-},{"aframe":1}]},{},[2]);
+require('./systems/layer-system');
+require('./components/layer-component');
+
+require('./systems/layer-animation-system');
+require('./components/layer-animation-component');
+
+require('./components/slow-rotate-component');
+
+},{"./components/background-color":4,"./components/layer-animation-component":5,"./components/layer-component":6,"./components/slow-rotate-component":7,"./systems/layer-animation-system":9,"./systems/layer-data-system":10,"./systems/layer-system":11,"aframe":1}],9:[function(require,module,exports){
+'use strict';
+
+var _mathUtils = require('../utils/math-utils');
+
+var _tween = require('tween.js');
+
+var _tween2 = _interopRequireDefault(_tween);
+
+function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
+
+/**
+ * Copyright 2017 Manny Tan
+ *
+ * Licensed under the Apache License, Version 2.0 (the 'License');
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an 'AS IS' BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+AFRAME.registerSystem('layer-animation', {
+	dependencies: ['layer-data'],
+
+	schema: {},
+
+	init: function init() {
+		// console.log( 'layer-animation-system', 'init' );
+		this.randomInt = _mathUtils.MathUtils.randomInt;
+		this.randomStep = _mathUtils.MathUtils.randomStep;
+		this.randomColor = _mathUtils.MathUtils.randomColor;
+		this.randomBool = _mathUtils.MathUtils.randomBool;
+
+		this.scene = this.el.sceneEl;
+		this.entities = null;
+		this.total = 0;
+	},
+	update: function update() {
+		var _this = this;
+
+		// console.log( 'layer-animation-system', 'update' );
+		this.scene.addEventListener('layers-ready', function (event) {
+			var layerData = _this.scene.systems['layer-data'];
+			_this.entities = layerData.entities;
+			_this.total = layerData.data.total;
+			_this.ticks = layerData.data.ticks;
+			_this.proxyEl = document.querySelector('#proxy');
+			_this.addLayerAnimationComponents();
+			_this.createAnimationManager();
+		});
+	},
+
+
+	/**
+  * Creates all objects dynamically
+  */
+	addLayerAnimationComponents: function addLayerAnimationComponents() {
+		for (var i = 0; i < this.total; i++) {
+			var el = document.querySelector('#layer_' + i);
+			el.setAttribute('layer-animation', { seed: i });
+		}
+	},
+
+	createAnimationManager: function createAnimationManager() {
+		var _this2 = this;
+
+		console.log('layer-animation-system', 'createAnimationManager');
+		// event called when all transforms are done
+		this.el.addEventListener('all-list-transforms-complete', function (event) {
+			// console.log( 'all-list-transforms-complete' )
+			_this2.animationId = 0;
+			_this2.completeCount = 0;
+			_this2.animations = _this2.createTransformList();
+			_this2.animateTransform(_this2.animations[_this2.animationId]);
+		});
+
+		// event called when all steps are done
+		this.el.addEventListener('all-steps-complete', function (event) {
+			// console.log( 'all-steps-complete' );
+			_this2.completeCount = 0;
+
+			_this2.animationId++;
+			if (_this2.animationId === _this2.animations.length) {
+				_this2.el.emit('all-list-transforms-complete');
+			} else {
+				_this2.animateTransform(_this2.animations[_this2.animationId]);
+			}
+		});
+
+		// events called when a step is done
+		// step-complete is emited by layer component
+		this.entities.forEach(function (el) {
+			el.addEventListener('step-complete', function (event) {
+				// console.log( event.target.id, 'step-complete' )
+				_this2.completeCount++;
+				if (_this2.completeCount === _this2.total) {
+					_this2.el.emit('all-steps-complete');
+				}
+			});
+		});
+
+		this.animationId = 0;
+		this.completeCount = 0;
+		this.animations = this.createTransformList();
+		this.animateTransform(this.animations[this.animationId]);
+	},
+
+
+	/**
+  * adds an animation attribute to all step entities
+  * emits 'all-steps-complete' when all step animations have completed
+  */
+	animateTransform: function animateTransform(params) {
+		console.log(this.animationId + '/' + this.animations.length, params.property, params.to, params.spread);
+
+		var normal = void 0;
+		var el = void 0;
+		var to = void 0;
+		var from = new THREE.Vector3();
+
+		for (var i = 0; i < this.total; i++) {
+			el = this.entities[i];
+			normal = i / (this.total - 1);
+			from.copy(params.to);
+			from.negate();
+			to = this.getTargetVector(from, params.to, normal, params.spread);
+			el.components['layer-animation'].animateTransform(params.property, to);
+		}
+	},
+
+
+	/**
+  * Vector lerp
+  * if spread == true,	returns (b-a)*normal+a
+  * if spread == false, 	returns b
+  */
+	getTargetVector: function getTargetVector(from, to, normal, spread) {
+		var vec = new THREE.Vector3();
+		vec.copy(to);
+		if (spread) {
+			vec.sub(from);
+			// vec.multiplyScalar( this.easeInSine ( normal, 0, 1, 1 ) );
+			vec.multiplyScalar(normal);
+			vec.add(from);
+		}
+		return vec;
+	},
+
+
+	// t: current time, b: begInnIng value, c: change In value, d: duration
+	// easeInSine ( normal, 0, 1, 1 );
+	easeInSine: function easeInSine(t, b, c, d) {
+		return -c * Math.cos(t / d * (Math.PI / 2)) + c + b;
+	},
+	easeOutSine: function easeOutSine(t, b, c, d) {
+		return c * Math.sin(t / d * (Math.PI / 2)) + b;
+	},
+	createTransformList: function createTransformList() {
+		return [{ property: 'shift', to: { x: 0, y: 0, z: 0 }, spread: false }, { property: 'rotation', to: this.getRandomRotation(), spread: true }, { property: 'position', to: this.getRandomPosition(), spread: false }, { property: 'scale', to: this.getRandomScale(), spread: false }, { property: 'position', to: { x: 0, y: 0, z: 1 }, spread: false }, { property: 'rotation', to: this.getRandomRotation(), spread: true }, { property: 'scale', to: { x: 1, y: 1, z: 1 }, spread: false }, { property: 'rotation', to: { x: 0, y: 0, z: 0 }, spread: true }, { property: 'scale', to: { x: 1, y: 1, z: 1 }, spread: false }];
+	},
+	getRandomPosition: function getRandomPosition() {
+		return {
+			x: this.randomStep(1, 4, 0.25),
+			y: 0,
+			z: 0
+		};
+	},
+	getRandomRotation: function getRandomRotation() {
+		return {
+			x: this.randomStep(-90, 90, 10),
+			y: this.randomStep(-90, 90, 10),
+			z: 0
+		};
+		return {
+			x: this.randomStep(-90, 90, 45),
+			y: this.randomStep(-90, 90, 45),
+			z: 0
+		};
+	},
+	getRandomScale: function getRandomScale() {
+		return {
+			x: this.randomStep(0.5, 1, 0.05),
+			y: this.randomStep(0.5, 1, 0.05),
+			z: this.randomStep(0.05, 1, 0.05)
+		};
+	}
+});
+
+function tweenUpdate() {
+	requestAnimationFrame(tweenUpdate);
+	_tween2.default.update();
+}
+tweenUpdate();
+
+},{"../utils/math-utils":12,"tween.js":3}],10:[function(require,module,exports){
+'use strict';
+
+/**
+ * Copyright 2017 Manny Tan
+ *
+ * Licensed under the Apache License, Version 2.0 (the 'License');
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an 'AS IS' BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+AFRAME.registerSystem('layer-data', {
+	schema: {
+		total: { type: 'number', default: 128 },
+		ticks: { type: 'number', default: 128 }
+	},
+
+	init: function init() {
+		// console.log( 'layer-data-system', 'init' );
+		console.log('layer-data-system', 'total:', this.data.total, 'ticks:', this.data.ticks);
+
+		this.entities = [];
+		this.scene = this.el.sceneEl;
+
+		// creates and transforms proxy entity
+		this.proxyEl = document.createElement('a-entity');
+		this.proxyEl.id = 'proxy';
+		this.proxyEl.setAttribute('position', { x: 0, y: 0, z: 0 });
+		this.proxyEl.setAttribute('scale', { x: -2, y: 2, z: 2 });
+		this.proxyEl.setAttribute('rotation', { x: 90, y: 0, z: 0 });
+		this.proxyEl.setAttribute('visible', false);
+		this.scene.appendChild(this.proxyEl);
+
+		// creates layer container
+		this.layerContainer = document.createElement('a-entity');
+		this.layerContainer.id = 'layerContainer';
+		this.layerContainer.setAttribute('position', { x: 0, y: 1.6, z: -3 });
+		this.layerContainer.setAttribute('slow-rotate', { speed: 0.05 });
+		this.scene.appendChild(this.layerContainer);
+
+		for (var i = 0; i < this.data.total; i++) {
+			this.createLayerEntity(i);
+		}
+	},
+	createLayerEntity: function createLayerEntity(seed) {
+		var el = document.createElement('a-entity');
+		el.id = 'layer_' + seed;
+		if (seed % 2 !== 0) {
+			el.setAttribute('visible', false);
+		}
+		this.layerContainer.appendChild(el);
+	},
+	deleteLayerEntity: function deleteLayerEntity(seed) {
+		var el = this.entities[seed];
+		el.parentNode.removeChild(el);
+	}
+});
+
+},{}],11:[function(require,module,exports){
+'use strict';
+
+/**
+ * Copyright 2017 Manny Tan
+ *
+ * Licensed under the Apache License, Version 2.0 (the 'License');
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an 'AS IS' BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+AFRAME.registerSystem('layer', {
+	dependencies: ['layer-data'],
+
+	schema: {},
+
+	init: function init() {
+		// console.log( 'layer-system', 'init' );
+		this.scene = this.el.sceneEl;
+
+		var layerData = this.scene.systems['layer-data'];
+		this.entities = layerData.entities;
+		this.total = layerData.data.total;
+		this.ticks = layerData.data.ticks;
+
+		this.isProxyReady = false;
+		this.areLayersReady = false;
+
+		this.proxyEl = document.querySelector('#proxy');
+		this.layerContainer = document.querySelector('#layerContainer');
+	},
+	update: function update() {
+		var _this = this;
+
+		// console.log( 'layer-system', 'update' );
+
+		// transforms proxy entity
+		this.proxyEl.addEventListener('object3dset', function (event) {
+			_this.isProxyReady = true;
+			_this.tryMapVertices();
+		});
+		this.proxyEl.setObject3D('obj', this.createProxyEntity(this.total, this.ticks));
+
+		//
+		this.scene.addEventListener('layers3dset', function (event) {
+			_this.bakeTransformsOnEntity(_this.proxyEl);
+			_this.morphSphereVertices();
+			_this.areLayersReady = true;
+			_this.tryMapVertices();
+		});
+
+		this.addLayerComponents();
+	},
+
+
+	/**
+  * Creates all objects dynamically
+  */
+	addLayerComponents: function addLayerComponents() {
+		for (var i = 0; i < this.total; i++) {
+			var el = document.querySelector('#layer_' + i);
+			el.setAttribute('layer', { seed: i });
+		}
+	},
+
+	morphSphereVertices: function morphSphereVertices() {
+		var proxyGeometry = this.proxyEl.getObject3D('obj').geometry;
+		var proxyVertices = proxyGeometry.vertices;
+
+		var normal = 0.5;
+
+		var min = 1000;
+		var max = -1000;
+		proxyVertices.forEach(function (vertex) {
+			min = vertex.y < min ? vertex.y : min;
+			max = vertex.y > max ? vertex.y : max;
+		});
+		proxyVertices.forEach(function (vertex, seed) {
+			// vertex.z += 0.1;
+			vertex.z *= (vertex.y + 2) / (max + 2) + 0.25;
+			// console.log(seed, vertex.y/max)
+		});
+		proxyGeometry.elementsNeedUpdate = true;
+	},
+
+
+	/**
+  * takes toruses/tori geometry and remaps vertices based on sphere geometry
+  */
+	tryMapVertices: function tryMapVertices() {
+
+		if (!this.isProxyReady) return;
+		if (!this.areLayersReady) return;
+		console.log('layer-system', 'tryMapVertices');
+
+		var proxyGeometry = this.proxyEl.getObject3D('obj').geometry;
+		var proxyVertices = proxyGeometry.vertices;
+		var layerComponent = void 0;
+		for (var i = 0; i < this.total; i++) {
+			layerComponent = this.entities[i].components['layer'];
+			layerComponent.mapVertices(layerComponent.geometry);
+		}
+		this.scene.emit('layers-ready');
+	},
+
+
+	/**
+  * Removes all transforms from 3dObject and applies it to all vertices
+  * @param el
+  */
+	bakeTransformsOnEntity: function bakeTransformsOnEntity(el) {
+		var mesh = el.object3D;
+		mesh.updateMatrix();
+		mesh.updateMatrixWorld(true);
+
+		var vertices = el.getObject3D('obj').geometry.vertices;
+		vertices.forEach(function (vertex) {
+			vertex.applyMatrix4(mesh.matrixWorld);
+		});
+
+		el.removeAttribute('scale');
+		el.removeAttribute('rotation');
+		el.removeAttribute('position');
+	},
+	createProxyEntity: function createProxyEntity(total, ticks) {
+		var totalSteps = total * 2;
+		var geometry = new THREE.SphereGeometry(1, ticks, totalSteps);
+		var material = new THREE.MeshPhongMaterial({
+			color: 0x000000,
+			flatShading: true,
+			wireframe: true
+		});
+		return new THREE.Mesh(geometry, material);
+	},
+
+
+	registerMe: function registerMe(el) {
+		this.entities.push(el);
+		if (this.entities.length === this.total) {
+			this.scene.emit('layers3dset');
+		}
+	},
+
+	unregisterMe: function unregisterMe(el) {
+		var index = this.entities.indexOf(el);
+		this.entities.splice(index, 1);
+	}
+
+});
+
+},{}],12:[function(require,module,exports){
+'use strict';
+
+Object.defineProperty(exports, "__esModule", {
+	value: true
+});
+
+var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
+
+function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
+
+/**
+ * Copyright 2017 Manny Tan
+ *
+ * Licensed under the Apache License, Version 2.0 (the 'License');
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an 'AS IS' BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+/**
+ * MathUtils
+ *
+ * Simple singleton math utility class.
+ */
+
+var StaticMathUtils = function () {
+	function StaticMathUtils() {
+		_classCallCheck(this, StaticMathUtils);
+	}
+
+	_createClass(StaticMathUtils, [{
+		key: 'randomBool',
+
+
+		/**
+   * Returns random boolean value
+   */
+		value: function randomBool() {
+			return this.randomInt(0, 1) === 0;
+		}
+
+		/**
+   * Returns random color between #000000 -> #FFFFFF
+   */
+
+	}, {
+		key: 'randomColor',
+		value: function randomColor() {
+			var letters = '0123456789ABCDEF';
+			var color = '#';
+			for (var i = 0; i < 6; i++) {
+				color += letters[Math.floor(Math.random() * 16)];
+			}
+			return color;
+		}
+
+		/**
+   * Returns random value between range based on step
+   */
+
+	}, {
+		key: 'randomStep',
+		value: function randomStep(min, max, step) {
+			return Math.floor(Math.random() * (max - min) / step) * step + min;
+		}
+
+		/**
+   * Returns random interger value between range
+   */
+
+	}, {
+		key: 'randomInt',
+		value: function randomInt(min, max) {
+			return Math.floor(Math.random() * (max - min + 1) + min);
+		}
+
+		/**
+   * Clamps a given value between min and max
+   */
+
+	}, {
+		key: 'clamp',
+		value: function clamp(value, min, max) {
+			return Math.min(Math.max(value, min), max);
+		}
+
+		/**
+   * Linearly interpolates between two given values
+   */
+
+	}, {
+		key: 'lerp',
+		value: function lerp(a, b, t) {
+			return a * (1 - t) + b * t;
+		}
+	}, {
+		key: 'smooth1D',
+		value: function smooth1D(current, target, velocity, dt, smoothTime, smoothMax) {
+			var t = 2 / smoothTime;
+			var t2 = t * dt;
+			var cubic = 1 / (1 + t2 + 0.5 * t2 * t2 + 0.25 * t2 * t2 * t2);
+			var limit = smoothMax * smoothTime;
+			var delta = current - target;
+			var error = MathUtils.clamp(delta, -limit, limit);
+			var d = (velocity + t * error) * dt;
+
+			return {
+				velocity: (velocity - t * d) * cubic,
+				value: current - error + (d + error) * cubic
+			};
+		}
+
+		/**
+   * Same as smooth1D(), but for THREE.Vector3s
+   */
+
+	}, {
+		key: 'smooth3D',
+		value: function smooth3D(current, target, velocity, dt, smoothTime, smoothMax) {
+			var smooth = {
+				x: this.smooth1D(current.x, target.x, velocity.x, dt, smoothTime, smoothMax),
+				y: this.smooth1D(current.y, target.y, velocity.y, dt, smoothTime, smoothMax),
+				z: this.smooth1D(current.z, target.z, velocity.z, dt, smoothTime, smoothMax)
+			};
+
+			velocity.x = smooth.x.velocity;
+			velocity.y = smooth.y.velocity;
+			velocity.z = smooth.z.velocity;
+
+			current.x = smooth.x.value;
+			current.y = smooth.y.value;
+			current.z = smooth.z.value;
+		}
+	}]);
+
+	return StaticMathUtils;
+}();
+
+var MathUtils = exports.MathUtils = new StaticMathUtils();
+
+},{}]},{},[8]);
