@@ -61,14 +61,14 @@ AFRAME.registerSystem( 'layer', {
 		// creates layer container
 		this.layerContainer = document.createElement( 'a-entity' );
 		this.layerContainer.id = 'layerContainer';
-		this.layerContainer.setAttribute( 'position', { x: 0, y: 1.6, z: -5 } );
+		this.layerContainer.setAttribute( 'position', { x: 0, y: 1.6, z: -4 } );
 		this.layerContainer.setAttribute( 'slow-rotate', { speed: 0.05 } );
 		this.scene.appendChild( this.layerContainer );
 
 		// creates layers
 		this.scene.addEventListener( 'layers3dset', event => {
 			this.bakeTransformsOnEntity( this.proxyEl );
-			// this.morphSphereVertices();
+			this.morphSphereVertices();
 			this.areLayersReady = true;
 			this.tryMapVertices();
 		} );

@@ -194,8 +194,10 @@ AFRAME.registerComponent('layer', {
 		let prop = new THREE.Vector3();
 		prop.copy( this.torusMesh.position );
 
-		let speed = 5000;
-		let delay = 0;
+		// let speed = 5000;
+		// let delay = 0;
+		let speed = 2000;
+		let delay = 4000 * this.normal;
 
 		this.transformTween = new TWEEN.Tween( prop )
 			.to( to, speed )
