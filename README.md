@@ -1,6 +1,6 @@
 # layer
-A web vr experiment made from 'layers' composited from a sphere.
-Inspired from a 2017 MOMA Holiday Catalog
+[Layer](http://layer.uncontrol.com) is a web vr experiment made from 'layers' composited from a sphere.<br>
+Inspired from a 2017 MOMA Holiday Catalog.
 
 ![layer](http://layer.uncontrol.com/img/layer.png)
 
