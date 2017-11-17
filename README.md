@@ -1,21 +1,16 @@
 # layer
-A 3d composite using multiples layers
+
+A simple web vr experiment made from a bunch of 'layers' sliced from a sphere.
+Inspired from a 2017 MOMA Holiday Catalog
 
 boilerplate instructions below.
 
-# A-Frame Boilerplate
+# getting started
 
-Boilerplate for creating WebVR scenes with [A-Frame](https://aframe.io).
+```
+npm install
+npm run start```
 
-Alternatively, check out the [A-Frame Starter on
-glitch.com](https://glitch.com/~aframe) for a more interactive way on getting
-started.
-
-## Getting Started
-
-`npm install`
-`npm run start`
-
-## License
+# license
 
 This program is free software and is distributed under an [MIT License](LICENSE).
